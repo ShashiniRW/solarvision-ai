@@ -2,6 +2,7 @@ package com.solarvision.backend.user;
 
 import com.solarvision.backend.organization.Organization;
 import com.solarvision.backend.organization.OrganizationRepository;
+import com.solarvision.backend.security.JwtUtil;
 import com.solarvision.backend.user.dto.RegisterRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,15 +17,18 @@ public class UserService {
     private final OrganizationRepository organizationRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     public UserService(UserRepository userRepository,
                        OrganizationRepository organizationRepository,
                        RoleRepository roleRepository,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.organizationRepository = organizationRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
     }
 
     public User registerUser(RegisterRequest request) {
@@ -55,5 +59,16 @@ public class UserService {
         user.setRoles(roles);
 
         return userRepository.save(user);
+    }
+
+    public String login(String email, String rawPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+
+        return jwtUtil.generateToken(user.getEmail());
     }
 }

@@ -1,6 +1,7 @@
 package com.solarvision.backend.user;
 
 import com.solarvision.backend.user.dto.RegisterRequest;
+import com.solarvision.backend.user.dto.LoginRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,15 @@ public class AuthController {
                 )
         );
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        String token = userService.login(request.getEmail(), request.getPassword());
+
+        return ResponseEntity.ok(new LoginResponse(token));
+    }
+
+    private record LoginResponse(String token) {}
 
     private record RegisterResponse(
             Long id,
