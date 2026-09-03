@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -37,6 +38,11 @@ public class AuthController {
         String token = userService.login(request.getEmail(), request.getPassword());
 
         return ResponseEntity.ok(new LoginResponse(token));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+        return ResponseEntity.ok(authentication.getName());
     }
 
     private record LoginResponse(String token) {}
