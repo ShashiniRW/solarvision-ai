@@ -1,6 +1,7 @@
 package com.solarvision.backend.project;
 
 import com.solarvision.backend.project.dto.ProjectRequest;
+import com.solarvision.backend.project.dto.ProjectResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,18 +20,22 @@ public class ProjectController {
     }
 
     @PostMapping
-    public ResponseEntity<Project> createProject(@Valid @RequestBody ProjectRequest request) {
+    public ResponseEntity<ProjectResponse> createProject(@Valid @RequestBody ProjectRequest request) {
         Project savedProject = projectService.createProject(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedProject);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ProjectResponse.fromEntity(savedProject));
     }
 
     @GetMapping
-    public ResponseEntity<List<Project>> getAllProjects() {
-        return ResponseEntity.ok(projectService.getAllProjects());
+    public ResponseEntity<List<ProjectResponse>> getAllProjects() {
+        List<ProjectResponse> responses = projectService.getAllProjects().stream()
+                .map(ProjectResponse::fromEntity)
+                .toList();
+        return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Project> getProjectById(@PathVariable Long id) {
-        return ResponseEntity.ok(projectService.getProjectById(id));
+    public ResponseEntity<ProjectResponse> getProjectById(@PathVariable Long id) {
+        Project project = projectService.getProjectById(id);
+        return ResponseEntity.ok(ProjectResponse.fromEntity(project));
     }
 }

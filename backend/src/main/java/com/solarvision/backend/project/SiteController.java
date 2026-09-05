@@ -1,6 +1,7 @@
 package com.solarvision.backend.project;
 
 import com.solarvision.backend.project.dto.SiteRequest;
+import com.solarvision.backend.project.dto.SiteResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,18 +20,22 @@ public class SiteController {
     }
 
     @PostMapping
-    public ResponseEntity<Site> createSite(@Valid @RequestBody SiteRequest request) {
+    public ResponseEntity<SiteResponse> createSite(@Valid @RequestBody SiteRequest request) {
         Site savedSite = siteService.createSite(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedSite);
+        return ResponseEntity.status(HttpStatus.CREATED).body(SiteResponse.fromEntity(savedSite));
     }
 
     @GetMapping
-    public ResponseEntity<List<Site>> getSitesByProject(@RequestParam Long projectId) {
-        return ResponseEntity.ok(siteService.getSitesByProject(projectId));
+    public ResponseEntity<List<SiteResponse>> getSitesByProject(@RequestParam Long projectId) {
+        List<SiteResponse> responses = siteService.getSitesByProject(projectId).stream()
+                .map(SiteResponse::fromEntity)
+                .toList();
+        return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Site> getSiteById(@PathVariable Long id) {
-        return ResponseEntity.ok(siteService.getSiteById(id));
+    public ResponseEntity<SiteResponse> getSiteById(@PathVariable Long id) {
+        Site site = siteService.getSiteById(id);
+        return ResponseEntity.ok(SiteResponse.fromEntity(site));
     }
 }
