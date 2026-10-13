@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -51,5 +52,30 @@ public class SensorReadingService {
         reading.setIsSimulated(request.getIsSimulated() != null ? request.getIsSimulated() : true);
 
         return sensorReadingRepository.save(reading);
+    }
+
+    @Transactional(readOnly = true)
+    public SensorReading getLatest(Long equipmentId) {
+        if (!equipmentRepository.existsById(equipmentId)) {
+            throw new IllegalArgumentException("Equipment not found with id: " + equipmentId);
+        }
+        return sensorReadingRepository.findFirstByEquipmentIdOrderByRecordedAtDesc(equipmentId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No readings found for equipment id: " + equipmentId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<SensorReading> getRange(Long equipmentId, OffsetDateTime from, OffsetDateTime to) {
+        if (!equipmentRepository.existsById(equipmentId)) {
+            throw new IllegalArgumentException("Equipment not found with id: " + equipmentId);
+        }
+        if (!from.isBefore(to)) {
+            throw new IllegalArgumentException("'from' must be earlier than 'to'");
+        }
+        if (from.plusDays(31).isBefore(to)) {
+            throw new IllegalArgumentException("Time range cannot exceed 31 days");
+        }
+        return sensorReadingRepository
+                .findByEquipmentIdAndRecordedAtBetweenOrderByRecordedAtAsc(equipmentId, from, to);
     }
 }
