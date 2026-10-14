@@ -34,5 +34,7 @@ public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
             "WHERE e.qrCode = :qrCode")
     Optional<Equipment> findByQrCode(String qrCode);
 
+    List<Equipment> findByEquipmentTypeAndStatus(String equipmentType, String status);
+
     boolean existsByQrCode(String qrCode);
 }
