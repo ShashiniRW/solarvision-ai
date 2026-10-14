@@ -3,11 +3,15 @@ package com.solarvision.backend.monitoring;
 import com.solarvision.backend.equipment.Equipment;
 import com.solarvision.backend.equipment.EquipmentRepository;
 import com.solarvision.backend.monitoring.dto.CreateSensorReadingRequest;
+import com.solarvision.backend.monitoring.dto.DailyEnergySummaryResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -16,6 +20,9 @@ public class SensorReadingService {
 
     private final SensorReadingRepository sensorReadingRepository;
     private final EquipmentRepository equipmentRepository;
+
+    // For now every site uses one time zone; later this will come from the site
+    private static final ZoneId SITE_ZONE = ZoneId.of("Asia/Colombo");
 
     @Transactional
     public SensorReading create(CreateSensorReadingRequest request) {
@@ -77,5 +84,28 @@ public class SensorReadingService {
         }
         return sensorReadingRepository
                 .findByEquipmentIdAndRecordedAtBetweenOrderByRecordedAtAsc(equipmentId, from, to);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DailyEnergySummaryResponse> getDailySummary(Long equipmentId, LocalDate from, LocalDate to) {
+        if (!equipmentRepository.existsById(equipmentId)) {
+            throw new IllegalArgumentException("Equipment not found with id: " + equipmentId);
+        }
+        if (from.isAfter(to)) {
+            throw new IllegalArgumentException("'from' must not be later than 'to'");
+        }
+        if (ChronoUnit.DAYS.between(from, to) > 92) {
+            throw new IllegalArgumentException("Date range cannot exceed 92 days");
+        }
+
+        // from the start of the first local day up to (not including) the start of the day after 'to'
+        OffsetDateTime fromTs = from.atStartOfDay(SITE_ZONE).toOffsetDateTime();
+        OffsetDateTime toTs = to.plusDays(1).atStartOfDay(SITE_ZONE).toOffsetDateTime();
+
+        return sensorReadingRepository
+                .findDailySummary(equipmentId, fromTs, toTs, SITE_ZONE.getId())
+                .stream()
+                .map(DailyEnergySummaryResponse::fromProjection)
+                .toList();
     }
 }

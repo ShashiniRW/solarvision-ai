@@ -1,6 +1,7 @@
 package com.solarvision.backend.monitoring;
 
 import com.solarvision.backend.monitoring.dto.CreateSensorReadingRequest;
+import com.solarvision.backend.monitoring.dto.DailyEnergySummaryResponse;
 import com.solarvision.backend.monitoring.dto.SensorReadingResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -53,5 +55,14 @@ public class SensorReadingController {
                 .map(SensorReadingResponse::fromEntity)
                 .toList();
         return ResponseEntity.ok(readings);
+    }
+
+    @GetMapping("/equipment/{equipmentId}/daily-summary")
+    public ResponseEntity<List<DailyEnergySummaryResponse>> getDailySummary(
+            @PathVariable Long equipmentId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+
+        return ResponseEntity.ok(sensorReadingService.getDailySummary(equipmentId, from, to));
     }
 }
