@@ -1,5 +1,6 @@
 package com.solarvision.backend.project;
 
+import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.project.dto.AssignmentRequest;
 import com.solarvision.backend.user.User;
 import com.solarvision.backend.user.UserRepository;
@@ -37,10 +38,10 @@ public class ProjectAssignmentService {
         }
 
         Project project = projectRepository.findById(request.getProjectId())
-                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         ProjectAssignment assignment = new ProjectAssignment();
         assignment.setProject(project);

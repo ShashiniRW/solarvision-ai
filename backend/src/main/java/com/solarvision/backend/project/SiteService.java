@@ -1,5 +1,6 @@
 package com.solarvision.backend.project;
 
+import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.project.dto.SiteRequest;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +20,7 @@ public class SiteService {
     public Site createSite(SiteRequest request) {
 
         Project project = projectRepository.findById(request.getProjectId())
-                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
         Site site = new Site();
         site.setProject(project);
@@ -40,6 +41,6 @@ public class SiteService {
 
     public Site getSiteById(Long id) {
         return siteRepository.findByIdWithDetails(id)
-                .orElseThrow(() -> new IllegalArgumentException("Site not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Site not found"));
     }
 }

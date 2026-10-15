@@ -1,5 +1,6 @@
 package com.solarvision.backend.project;
 
+import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.organization.Organization;
 import com.solarvision.backend.organization.OrganizationRepository;
 import com.solarvision.backend.project.dto.ProjectRequest;
@@ -27,7 +28,7 @@ public class ProjectService {
     public Project createProject(ProjectRequest request) {
 
         Organization organization = organizationRepository.findById(request.getOrganizationId())
-                .orElseThrow(() -> new IllegalArgumentException("Organization not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
 
         Project project = new Project();
         project.setOrganization(organization);
@@ -39,7 +40,7 @@ public class ProjectService {
 
         if (request.getCustomerId() != null) {
             User customer = userRepository.findById(request.getCustomerId())
-                    .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
             project.setCustomer(customer);
         }
 
@@ -52,7 +53,7 @@ public class ProjectService {
 
     public Project getProjectById(Long id) {
         return projectRepository.findByIdWithDetails(id)
-                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
     }
 
 }

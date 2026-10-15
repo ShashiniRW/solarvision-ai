@@ -1,5 +1,6 @@
 package com.solarvision.backend.equipment;
 
+import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.equipment.dto.EquipmentRequest;
 import com.solarvision.backend.project.Site;
 import com.solarvision.backend.project.SiteRepository;
@@ -33,7 +34,7 @@ public class EquipmentService {
         }
 
         Site site = siteRepository.findById(request.getSiteId())
-                .orElseThrow(() -> new IllegalArgumentException("Site not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Site not found"));
 
         Equipment equipment = new Equipment();
         equipment.setSite(site);
@@ -58,11 +59,11 @@ public class EquipmentService {
 
     public Equipment getEquipmentById(Long id) {
         return equipmentRepository.findByIdWithDetails(id)
-                .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment not found"));
     }
 
     public Equipment getEquipmentByQrCode(String qrCode) {
         return equipmentRepository.findByQrCode(qrCode)
-                .orElseThrow(() -> new IllegalArgumentException("Equipment not found for this QR code"));
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment not found for this QR code"));
     }
 }

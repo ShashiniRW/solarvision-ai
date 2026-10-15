@@ -1,5 +1,6 @@
 package com.solarvision.backend.user;
 
+import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.organization.Organization;
 import com.solarvision.backend.organization.OrganizationRepository;
 import com.solarvision.backend.security.JwtUtil;
@@ -38,7 +39,7 @@ public class UserService {
         }
 
         Organization organization = organizationRepository.findById(request.getOrganizationId())
-                .orElseThrow(() -> new IllegalArgumentException("Organization not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
 
         Role customerRole = roleRepository.findAll().stream()
                 .filter(role -> role.getName().equals("CUSTOMER"))
