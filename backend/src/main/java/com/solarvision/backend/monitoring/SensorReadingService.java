@@ -1,5 +1,6 @@
 package com.solarvision.backend.monitoring;
 
+import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.equipment.Equipment;
 import com.solarvision.backend.equipment.EquipmentRepository;
 import com.solarvision.backend.monitoring.dto.CreateSensorReadingRequest;
@@ -28,7 +29,7 @@ public class SensorReadingService {
     public SensorReading create(CreateSensorReadingRequest request) {
 
         Equipment equipment = equipmentRepository.findById(request.getEquipmentId())
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Equipment not found with id: " + request.getEquipmentId()));
 
         // a reading with no measurements at all is meaningless
@@ -64,17 +65,17 @@ public class SensorReadingService {
     @Transactional(readOnly = true)
     public SensorReading getLatest(Long equipmentId) {
         if (!equipmentRepository.existsById(equipmentId)) {
-            throw new IllegalArgumentException("Equipment not found with id: " + equipmentId);
+            throw new ResourceNotFoundException("Equipment not found with id: " + equipmentId);
         }
         return sensorReadingRepository.findFirstByEquipmentIdOrderByRecordedAtDesc(equipmentId)
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "No readings found for equipment id: " + equipmentId));
     }
 
     @Transactional(readOnly = true)
     public List<SensorReading> getRange(Long equipmentId, OffsetDateTime from, OffsetDateTime to) {
         if (!equipmentRepository.existsById(equipmentId)) {
-            throw new IllegalArgumentException("Equipment not found with id: " + equipmentId);
+            throw new ResourceNotFoundException("Equipment not found with id: " + equipmentId);
         }
         if (!from.isBefore(to)) {
             throw new IllegalArgumentException("'from' must be earlier than 'to'");
@@ -89,7 +90,7 @@ public class SensorReadingService {
     @Transactional(readOnly = true)
     public List<DailyEnergySummaryResponse> getDailySummary(Long equipmentId, LocalDate from, LocalDate to) {
         if (!equipmentRepository.existsById(equipmentId)) {
-            throw new IllegalArgumentException("Equipment not found with id: " + equipmentId);
+            throw new ResourceNotFoundException("Equipment not found with id: " + equipmentId);
         }
         if (from.isAfter(to)) {
             throw new IllegalArgumentException("'from' must not be later than 'to'");
