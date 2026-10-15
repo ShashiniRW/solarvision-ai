@@ -1,4 +1,4 @@
-package com.solarvision.backend.user;
+package com.solarvision.backend.common.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
