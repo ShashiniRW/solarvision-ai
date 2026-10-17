@@ -1,5 +1,6 @@
 package com.solarvision.backend.monitoring;
 
+import com.solarvision.backend.alert.AlertService;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.equipment.Equipment;
 import com.solarvision.backend.equipment.EquipmentRepository;
@@ -34,6 +35,9 @@ class SensorReadingServiceTest {
 
     @Mock
     private EquipmentRepository equipmentRepository;
+
+    @Mock
+    private AlertService alertService;
 
     @InjectMocks
     private SensorReadingService service;
@@ -70,6 +74,17 @@ class SensorReadingServiceTest {
         assertThat(result.getPowerKw()).isEqualByComparingTo("4.250");
         assertThat(result.getIsSimulated()).isTrue();
         verify(sensorReadingRepository).save(any(SensorReading.class));
+    }
+
+    @Test
+    void create_evaluatesAlertRules_forTheSavedReading() {
+        when(equipmentRepository.findById(EQUIPMENT_ID)).thenReturn(Optional.of(equipment()));
+        when(sensorReadingRepository.save(any(SensorReading.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        SensorReading saved = service.create(requestWithPower(new BigDecimal("4.250")));
+
+        verify(alertService).evaluate(saved);
     }
 
     @Test

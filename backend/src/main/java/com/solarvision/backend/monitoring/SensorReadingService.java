@@ -1,5 +1,6 @@
 package com.solarvision.backend.monitoring;
 
+import com.solarvision.backend.alert.AlertService;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.equipment.Equipment;
 import com.solarvision.backend.equipment.EquipmentRepository;
@@ -21,6 +22,7 @@ public class SensorReadingService {
 
     private final SensorReadingRepository sensorReadingRepository;
     private final EquipmentRepository equipmentRepository;
+    private final AlertService alertService;
 
     // For now every site uses one time zone; later this will come from the site
     private static final ZoneId SITE_ZONE = ZoneId.of("Asia/Colombo");
@@ -59,7 +61,9 @@ public class SensorReadingService {
         reading.setTemperatureC(request.getTemperatureC());
         reading.setIsSimulated(request.getIsSimulated() != null ? request.getIsSimulated() : true);
 
-        return sensorReadingRepository.save(reading);
+        SensorReading saved = sensorReadingRepository.save(reading);
+        alertService.evaluate(saved);
+        return saved;
     }
 
     @Transactional(readOnly = true)
