@@ -1,11 +1,15 @@
 package com.solarvision.backend.alert;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
 
 public interface AlertRepository extends JpaRepository<Alert, Long> {
 
@@ -34,4 +38,23 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
                               @Param("severity") String severity,
                               @Param("message") String message,
                               @Param("triggeredAt") OffsetDateTime triggeredAt);
+
+    // ---- read queries (the equipment is loaded together with the alert) ----
+
+    @EntityGraph(attributePaths = "equipment")
+    Optional<Alert> findWithEquipmentById(Long id);
+
+    @EntityGraph(attributePaths = "equipment")
+    List<Alert> findAllByOrderByTriggeredAtDesc(Pageable pageable);
+
+    @EntityGraph(attributePaths = "equipment")
+    List<Alert> findByStatusOrderByTriggeredAtDesc(AlertStatus status, Pageable pageable);
+
+    @EntityGraph(attributePaths = "equipment")
+    List<Alert> findByEquipmentIdOrderByTriggeredAtDesc(Long equipmentId, Pageable pageable);
+
+    @EntityGraph(attributePaths = "equipment")
+    List<Alert> findByStatusAndEquipmentIdOrderByTriggeredAtDesc(AlertStatus status,
+                                                                 Long equipmentId,
+                                                                 Pageable pageable);
 }

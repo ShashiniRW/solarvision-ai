@@ -1,15 +1,22 @@
 package com.solarvision.backend.alert;
 
+import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.monitoring.SensorReading;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AlertService {
+
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final AlertRuleEvaluator ruleEvaluator;
     private final AlertRepository alertRepository;
@@ -41,5 +48,29 @@ public class AlertService {
             }
         }
         return created;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Alert> search(AlertStatus status, Long equipmentId, int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+
+        if (status != null && equipmentId != null) {
+            return alertRepository.findByStatusAndEquipmentIdOrderByTriggeredAtDesc(status, equipmentId, pageable);
+        }
+        if (status != null) {
+            return alertRepository.findByStatusOrderByTriggeredAtDesc(status, pageable);
+        }
+        if (equipmentId != null) {
+            return alertRepository.findByEquipmentIdOrderByTriggeredAtDesc(equipmentId, pageable);
+        }
+        return alertRepository.findAllByOrderByTriggeredAtDesc(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Alert getById(Long id) {
+        return alertRepository.findWithEquipmentById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Alert not found with id: " + id));
     }
 }
