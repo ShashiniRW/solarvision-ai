@@ -23,6 +23,7 @@ app.jwt.expiration-ms=86400000
 # Sensor reading simulator (creates fake readings for ACTIVE inverters; keep false in production)
 app.simulator.enabled=false
 app.simulator.interval-ms=60000
+app.simulator.fault-probability=0.0
 
 # Never send Java stack traces to API clients
 spring.web.error.include-stacktrace=never

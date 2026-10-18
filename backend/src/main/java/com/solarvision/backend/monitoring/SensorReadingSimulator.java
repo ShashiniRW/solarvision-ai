@@ -1,5 +1,6 @@
 package com.solarvision.backend.monitoring;
 
+import com.solarvision.backend.alert.AlertService;
 import com.solarvision.backend.equipment.Equipment;
 import com.solarvision.backend.equipment.EquipmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,8 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Generates fake sensor readings for ACTIVE inverters on a schedule.
+ * Generates fake sensor readings for ACTIVE inverters on a schedule, runs each reading
+ * through the alert engine, and occasionally injects a fault so alerts can be seen.
  * Only exists as a bean when app.simulator.enabled=true.
  */
 @Slf4j
@@ -38,10 +40,15 @@ public class SensorReadingSimulator {
 
     private final EquipmentRepository equipmentRepository;
     private final SensorReadingRepository sensorReadingRepository;
+    private final AlertService alertService;
     private final Random random = new Random();
 
     @Value("${app.simulator.interval-ms:60000}")
     private long intervalMs;
+
+    // Chance (0.0 to 1.0) that a generated reading contains a fault. 0 = never.
+    @Value("${app.simulator.fault-probability:0.0}")
+    private double faultProbability;
 
     @Scheduled(fixedRateString = "${app.simulator.interval-ms:60000}")
     public void generateReadings() {
@@ -58,9 +65,20 @@ public class SensorReadingSimulator {
             readings.add(buildReading(inverter, now));
         }
 
-        if (!readings.isEmpty()) {
-            sensorReadingRepository.saveAll(readings);
-            log.info("Simulator saved {} reading(s) at {}", readings.size(), now);
+        if (readings.isEmpty()) {
+            return;
+        }
+
+        List<SensorReading> saved = sensorReadingRepository.saveAll(readings);
+        log.info("Simulator saved {} reading(s) at {}", saved.size(), now);
+
+        // Same path as real data: every reading goes through the alert rules
+        for (SensorReading reading : saved) {
+            try {
+                alertService.evaluate(reading);
+            } catch (RuntimeException ex) {
+                log.error("Alert evaluation failed for reading {}", reading.getId(), ex);
+            }
         }
     }
 
@@ -94,7 +112,30 @@ public class SensorReadingSimulator {
         reading.setCurrentA(round(currentA, 2));
         reading.setTemperatureC(round(temperatureC, 2));
         reading.setIsSimulated(true);
+
+        maybeInjectFault(reading);
         return reading;
+    }
+
+    /** With probability faultProbability, makes the reading look like a broken inverter. */
+    private void maybeInjectFault(SensorReading reading) {
+        if (faultProbability <= 0 || random.nextDouble() >= faultProbability) {
+            return;
+        }
+
+        switch (random.nextInt(3)) {
+            case 0 -> // overheating: 70 to 90 C
+                    reading.setTemperatureC(round(70 + random.nextDouble() * 20, 2));
+            case 1 -> { // dead inverter: no output (only raises an alert during the day)
+                reading.setPowerKw(round(0, 3));
+                reading.setEnergyKwh(round(0, 3));
+                reading.setCurrentA(round(0, 2));
+            }
+            default -> // grid voltage problem: sag (190-200 V) or surge (255-275 V)
+                    reading.setVoltageV(round(random.nextBoolean()
+                            ? 190 + random.nextDouble() * 10
+                            : 255 + random.nextDouble() * 20, 2));
+        }
     }
 
     private BigDecimal round(double value, int scale) {
