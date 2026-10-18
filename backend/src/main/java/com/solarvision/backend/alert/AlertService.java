@@ -2,6 +2,8 @@ package com.solarvision.backend.alert;
 
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.monitoring.SensorReading;
+import com.solarvision.backend.user.User;
+import com.solarvision.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -9,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Slf4j
@@ -20,6 +23,7 @@ public class AlertService {
 
     private final AlertRuleEvaluator ruleEvaluator;
     private final AlertRepository alertRepository;
+    private final UserRepository userRepository;
 
     /**
      * Runs the alert rules against a saved reading and raises an alert for every
@@ -72,5 +76,44 @@ public class AlertService {
     public Alert getById(Long id) {
         return alertRepository.findWithEquipmentById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Alert not found with id: " + id));
+    }
+
+    /** OPEN -> ACKNOWLEDGED */
+    @Transactional
+    public Alert acknowledge(Long alertId, String userEmail) {
+        Alert alert = alertRepository.findWithEquipmentById(alertId)
+                .orElseThrow(() -> new ResourceNotFoundException("Alert not found with id: " + alertId));
+
+        if (alert.getStatus() != AlertStatus.OPEN) {
+            throw new IllegalArgumentException(
+                    "Only an OPEN alert can be acknowledged (current status: " + alert.getStatus() + ")");
+        }
+
+        alert.setStatus(AlertStatus.ACKNOWLEDGED);
+        alert.setAcknowledgedAt(OffsetDateTime.now());
+        alert.setAcknowledgedBy(userIdFor(userEmail));
+        return alertRepository.save(alert);
+    }
+
+    /** OPEN or ACKNOWLEDGED -> RESOLVED */
+    @Transactional
+    public Alert resolve(Long alertId, String userEmail) {
+        Alert alert = alertRepository.findWithEquipmentById(alertId)
+                .orElseThrow(() -> new ResourceNotFoundException("Alert not found with id: " + alertId));
+
+        if (alert.getStatus() == AlertStatus.RESOLVED) {
+            throw new IllegalArgumentException("Alert is already resolved");
+        }
+
+        alert.setStatus(AlertStatus.RESOLVED);
+        alert.setResolvedAt(OffsetDateTime.now());
+        alert.setResolvedBy(userIdFor(userEmail));
+        return alertRepository.save(alert);
+    }
+
+    private Long userIdFor(String email) {
+        return userRepository.findByEmail(email)
+                .map(User::getId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }
