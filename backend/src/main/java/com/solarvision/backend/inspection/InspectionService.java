@@ -10,10 +10,13 @@ import com.solarvision.backend.inspection.dto.CreateInspectionRequest;
 import com.solarvision.backend.user.User;
 import com.solarvision.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +26,7 @@ public class InspectionService {
     private final EquipmentRepository equipmentRepository;
     private final AlertRepository alertRepository;
     private final UserRepository userRepository;
+    private static final int MAX_PAGE_SIZE = 100;
 
     @Transactional
     public Inspection create(CreateInspectionRequest request, String creatorEmail) {
@@ -128,5 +132,24 @@ public class InspectionService {
         return userRepository.findByEmail(email)
                 .map(User::getId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Inspection> search(InspectionStatus status, Long equipmentId, int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+
+        if (status != null && equipmentId != null) {
+            return inspectionRepository.findByStatusAndEquipmentIdOrderByScheduledAtDesc(
+                    status, equipmentId, pageable);
+        }
+        if (status != null) {
+            return inspectionRepository.findByStatusOrderByScheduledAtDesc(status, pageable);
+        }
+        if (equipmentId != null) {
+            return inspectionRepository.findByEquipmentIdOrderByScheduledAtDesc(equipmentId, pageable);
+        }
+        return inspectionRepository.findAllByOrderByScheduledAtDesc(pageable);
     }
 }
