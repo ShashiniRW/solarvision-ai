@@ -1,5 +1,6 @@
 package com.solarvision.backend.user;
 
+import com.solarvision.backend.common.exception.InvalidCredentialsException;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.organization.Organization;
 import com.solarvision.backend.organization.OrganizationRepository;
@@ -20,6 +21,10 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
+    // A real hash of a throw-away password. Used so that a login attempt with an unknown
+    // email takes as long as one with a known email (no timing clue about which emails exist).
+    private final String dummyPasswordHash;
+
     public UserService(UserRepository userRepository,
                        OrganizationRepository organizationRepository,
                        RoleRepository roleRepository,
@@ -30,6 +35,7 @@ public class UserService {
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.dummyPasswordHash = passwordEncoder.encode("not-a-real-password");
     }
 
     public User registerUser(RegisterRequest request) {
@@ -63,11 +69,19 @@ public class UserService {
     }
 
     public String login(String email, String rawPassword) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+        User user = userRepository.findByEmail(email).orElse(null);
 
-        if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
-            throw new IllegalArgumentException("Invalid email or password");
+        if (user == null) {
+            // Same amount of work as for a real user, then the same generic failure
+            passwordEncoder.matches(rawPassword, dummyPasswordHash);
+            throw new InvalidCredentialsException();
+        }
+
+        boolean passwordMatches = passwordEncoder.matches(rawPassword, user.getPasswordHash());
+        boolean accountActive = "ACTIVE".equals(user.getStatus());
+
+        if (!passwordMatches || !accountActive) {
+            throw new InvalidCredentialsException();
         }
 
         return jwtUtil.generateToken(user.getEmail());
