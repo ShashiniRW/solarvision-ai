@@ -1,6 +1,7 @@
 package com.solarvision.backend.user;
 
 import com.solarvision.backend.common.exception.InvalidCredentialsException;
+import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.organization.OrganizationRepository;
 import com.solarvision.backend.security.JwtUtil;
 import org.junit.jupiter.api.Test;
@@ -95,5 +96,21 @@ class UserServiceTest {
                 .isInstanceOf(InvalidCredentialsException.class)
                 .hasMessage("Invalid email or password");
         verify(jwtUtil, never()).generateToken(any());
+    }
+
+    @Test
+    void getCurrentUser_returnsTheUser_whenEmailExists() {
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user("ACTIVE")));
+
+        assertThat(service.getCurrentUser(EMAIL).getEmail()).isEqualTo(EMAIL);
+    }
+
+    @Test
+    void getCurrentUser_throwsNotFound_whenEmailIsUnknown() {
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getCurrentUser(EMAIL))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("User not found");
     }
 }
