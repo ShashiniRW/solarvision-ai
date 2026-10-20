@@ -8,4 +8,5 @@ export type NavItem = {
 // Items are added here as each page is built.
 export const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard" },
+  { label: "Projects", href: "/projects" },
 ];
