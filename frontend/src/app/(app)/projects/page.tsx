@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { StatusBadge } from "@/components/status-badge";
 import { apiGet } from "@/lib/api";
 import { formatDate } from "@/lib/format";
@@ -30,7 +31,11 @@ export default async function ProjectsPage() {
             <tbody className="divide-y divide-gray-100">
               {projects.map((project) => (
                 <tr key={project.id}>
-                  <td className="px-4 py-3 font-medium">{project.name}</td>
+                  <td className="px-4 py-3 font-medium">
+                    <Link href={`/projects/${project.id}`} className="text-amber-700 hover:underline">
+                      {project.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3">{project.organizationName}</td>
                   <td className="px-4 py-3">
                     <StatusBadge value={project.status} />

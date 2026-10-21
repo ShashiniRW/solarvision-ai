@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { BACKEND_URL, TOKEN_COOKIE } from "@/lib/backend";
 
 export class ApiError extends Error {
@@ -42,4 +42,16 @@ export async function apiGet<T>(path: string): Promise<T> {
   }
 
   return (await response.json()) as T;
+}
+
+// Same as apiGet, but a 404 from the backend shows the "not found" page.
+export async function apiGetOrNotFound<T>(path: string): Promise<T> {
+  try {
+    return await apiGet<T>(path);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      notFound();
+    }
+    throw error;
+  }
 }

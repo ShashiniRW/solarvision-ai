@@ -10,3 +10,12 @@ export function formatDate(value: string | null | undefined): string {
     timeZone: "UTC",
   });
 }
+
+
+// 10.5 becomes "10.5 kW"; empty values show a dash.
+export function formatKw(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "-";
+  }
+  return `${value} kW`;
+}
