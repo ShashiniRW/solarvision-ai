@@ -55,3 +55,17 @@ export async function apiGetOrNotFound<T>(path: string): Promise<T> {
     throw error;
   }
 }
+
+
+// Same as apiGet, but a 404 from the backend gives null instead of an error.
+// Used for "might not exist yet" data, such as the latest reading of new equipment.
+export async function apiGetOrNull<T>(path: string): Promise<T | null> {
+  try {
+    return await apiGet<T>(path);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { InfoGrid } from "@/components/info-grid";
 import { StatusBadge } from "@/components/status-badge";
@@ -66,7 +67,11 @@ export default async function SiteDetailPage({
             <tbody className="divide-y divide-gray-100">
               {equipment.map((item) => (
                 <tr key={item.id}>
-                  <td className="px-4 py-3 font-medium">{item.equipmentType}</td>
+                  <td className="px-4 py-3 font-medium">
+                    <Link href={`/equipment/${item.id}`} className="text-amber-700 hover:underline">
+                      {item.equipmentType}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3">
                     {[item.manufacturer, item.model].filter(Boolean).join(" ") || "-"}
                   </td>

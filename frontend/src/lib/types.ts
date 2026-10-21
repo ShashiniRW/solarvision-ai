@@ -43,3 +43,57 @@ export type Equipment = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type SensorReading = {
+  id: number;
+  equipmentId: number;
+  recordedAt: string;
+  powerKw: number | null;
+  energyKwh: number | null;
+  voltageV: number | null;
+  currentA: number | null;
+  temperatureC: number | null;
+  isSimulated: boolean;
+};
+
+export type DailyEnergySummary = {
+  date: string;
+  totalEnergyKwh: number;
+  peakPowerKw: number | null;
+  avgTemperatureC: number | null;
+  readingCount: number;
+};
+
+export type Alert = {
+  id: number;
+  equipmentId: number;
+  equipmentType: string;
+  equipmentSerialNumber: string | null;
+  alertType: string;
+  severity: string;
+  status: string;
+  message: string;
+  triggeredAt: string;
+  acknowledgedAt: string | null;
+  acknowledgedBy: number | null;
+  resolvedAt: string | null;
+  resolvedBy: number | null;
+  readingId: number | null;
+};
+
+export type Inspection = {
+  id: number;
+  equipmentId: number;
+  equipmentType: string;
+  equipmentSerialNumber: string | null;
+  alertId: number | null;
+  inspectionType: string;
+  status: string;
+  scheduledAt: string;
+  assignedTo: number | null;
+  createdBy: number | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  result: string | null;
+  findings: string | null;
+};
