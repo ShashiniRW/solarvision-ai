@@ -47,6 +47,13 @@ export default async function EquipmentDetailPage({
 
   const stale = latest ? isOlderThanMinutes(latest.recordedAt, STALE_AFTER_MINUTES) : false;
   const title = [equipment.equipmentType, equipment.serialNumber].filter(Boolean).join(" · ");
+  
+  // one entry for each of the last 14 days; days without readings get null (no bar)
+  const energyByDate = new Map(summary.map((day) => [day.date, day.totalEnergyKwh]));
+  const chartData = Array.from({ length: CHART_DAYS }, (_, index) => {
+    const date = isoDateInColombo(-(CHART_DAYS - 1 - index));
+    return { date, totalEnergyKwh: energyByDate.get(date) ?? null };
+  });
 
   return (
     <div>
@@ -114,15 +121,15 @@ export default async function EquipmentDetailPage({
 
       {/* ---------- Daily energy chart ---------- */}
       <section className="mt-8">
-        <h2 className="text-lg font-semibold">Daily energy (last {CHART_DAYS} days)</h2>
+        <h2 className="text-lg font-semibold">Daily energy in kWh (last {CHART_DAYS} days)</h2>
         {summary.length === 0 ? (
           <p className="mt-3 rounded-lg border border-dashed border-gray-300 p-8 text-center text-gray-500">
             No energy data for this period.
           </p>
         ) : (
           <div className="mt-3 rounded-lg border border-gray-200 bg-white p-4">
-            <EnergyChart data={summary} />
-            <p className="mt-2 text-xs text-gray-500">Days without readings are not shown.</p>
+            <EnergyChart data={chartData} />
+            <p className="mt-2 text-xs text-gray-500">Days without readings have no bar.</p>
           </div>
         )}
       </section>

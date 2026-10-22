@@ -10,7 +10,8 @@ import {
   YAxis,
 } from "recharts";
 
-type Point = { date: string; totalEnergyKwh: number };
+// totalEnergyKwh is null on days without any readings (no bar is drawn)
+type Point = { date: string; totalEnergyKwh: number | null };
 
 // "2026-10-14" becomes "14 Oct"
 function shortDate(value: string): string {
@@ -27,8 +28,8 @@ export function EnergyChart({ data }: { data: Point[] }) {
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="date" tickFormatter={shortDate} />
-          <YAxis unit=" kWh" width={70} />
+          <XAxis dataKey="date" tickFormatter={shortDate} interval={0} tick={{ fontSize: 11 }} />
+          <YAxis width={48} />
           <Tooltip
             labelFormatter={(label) => shortDate(String(label))}
             formatter={(value) => `${value} kWh`}
