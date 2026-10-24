@@ -4,6 +4,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,4 +27,10 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
     List<Inspection> findByStatusAndEquipmentIdOrderByScheduledAtDesc(InspectionStatus status,
                                                                       Long equipmentId,
                                                                       Pageable pageable);
+
+
+    long countByStatus(InspectionStatus status);
+
+    // scheduled inspections whose time has already passed
+    long countByStatusAndScheduledAtBefore(InspectionStatus status, OffsetDateTime time);
 }

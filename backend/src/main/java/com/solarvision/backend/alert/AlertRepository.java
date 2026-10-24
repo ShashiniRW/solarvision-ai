@@ -57,4 +57,12 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     List<Alert> findByStatusAndEquipmentIdOrderByTriggeredAtDesc(AlertStatus status,
                                                                  Long equipmentId,
                                                                  Pageable pageable);
+
+
+    long countByStatus(AlertStatus status);
+
+    // unresolved alerts (open or acknowledged) of one severity
+    long countBySeverityAndStatusNot(AlertSeverity severity, AlertStatus status);
+
+
 }

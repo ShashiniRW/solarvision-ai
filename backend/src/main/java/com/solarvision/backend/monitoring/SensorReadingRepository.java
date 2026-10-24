@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -37,4 +38,11 @@ public interface SensorReadingRepository extends JpaRepository<SensorReading, Lo
                                                   @Param("fromTs") OffsetDateTime fromTs,
                                                   @Param("toTs") OffsetDateTime toTs,
                                                   @Param("zone") String zone);
+
+
+    // total energy produced between two moments (null when there are no readings)
+    @Query("SELECT SUM(r.energyKwh) FROM SensorReading r "
+            + "WHERE r.recordedAt >= :rangeStart AND r.recordedAt < :rangeEnd")
+    BigDecimal sumEnergyBetween(@Param("rangeStart") OffsetDateTime rangeStart,
+                                @Param("rangeEnd") OffsetDateTime rangeEnd);
 }

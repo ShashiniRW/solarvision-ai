@@ -36,5 +36,6 @@ public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
 
     List<Equipment> findByEquipmentTypeAndStatus(String equipmentType, String status);
 
+    long countByStatus(String status);
     boolean existsByQrCode(String qrCode);
 }
