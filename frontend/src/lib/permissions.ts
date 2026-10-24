@@ -20,3 +20,8 @@ export function canWorkInspections(roles: string[]): boolean {
 export function canCancelInspections(roles: string[]): boolean {
   return hasAny(roles, COORDINATOR_ROLES);
 }
+
+// schedule (create) inspections
+export function canScheduleInspections(roles: string[]): boolean {
+  return hasAny(roles, COORDINATOR_ROLES);
+}

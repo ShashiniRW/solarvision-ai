@@ -1,6 +1,9 @@
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { canScheduleInspections } from "@/lib/permissions";
 import { EnergyChart } from "@/components/energy-chart";
+import { getCurrentUser } from "@/lib/session";
 import { InfoGrid } from "@/components/info-grid";
+import { ScheduleInspectionForm } from "@/components/schedule-inspection-form";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
 import { apiGet, apiGetOrNotFound, apiGetOrNull } from "@/lib/api";
@@ -48,6 +51,17 @@ export default async function EquipmentDetailPage({
   const stale = latest ? isOlderThanMinutes(latest.recordedAt, STALE_AFTER_MINUTES) : false;
   const title = [equipment.equipmentType, equipment.serialNumber].filter(Boolean).join(" · ");
   
+  const user = await getCurrentUser();
+  const canSchedule = canScheduleInspections(user.roles);
+
+  // alerts that an inspection can still be linked to
+  const alertOptions = alerts
+    .filter((alert) => alert.status !== "RESOLVED")
+    .map((alert) => ({
+      id: alert.id,
+      label: `#${alert.id} · ${alert.alertType.replaceAll("_", " ")} (${alert.status})`,
+    }));
+
   // one entry for each of the last 14 days; days without readings get null (no bar)
   const energyByDate = new Map(summary.map((day) => [day.date, day.totalEnergyKwh]));
   const chartData = Array.from({ length: CHART_DAYS }, (_, index) => {
@@ -176,6 +190,11 @@ export default async function EquipmentDetailPage({
       {/* ---------- Inspections ---------- */}
       <section className="mt-8">
         <h2 className="text-lg font-semibold">Inspections</h2>
+        {canSchedule && (
+          <div className="mt-3">
+            <ScheduleInspectionForm equipmentId={equipmentId} alertOptions={alertOptions} />
+          </div>
+        )}
         {inspections.length === 0 ? (
           <p className="mt-3 rounded-lg border border-dashed border-gray-300 p-8 text-center text-gray-500">
             No inspections for this equipment.
