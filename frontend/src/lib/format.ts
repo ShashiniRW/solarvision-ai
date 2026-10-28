@@ -56,3 +56,9 @@ export function isoDateInColombo(daysFromToday = 0): string {
 export function isOlderThanMinutes(value: string, minutes: number): boolean {
   return Date.now() - new Date(value).getTime() > minutes * 60_000;
 }
+
+
+// The current time as "12:04:23" in Colombo time (shown as "Updated ..." on the dashboard).
+export function currentTimeLabel(): string {
+  return new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Colombo" });
+}

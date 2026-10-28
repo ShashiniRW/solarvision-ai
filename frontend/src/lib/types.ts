@@ -97,3 +97,16 @@ export type Inspection = {
   result: string | null;
   findings: string | null;
 };
+
+export type DashboardSummary = {
+  openAlerts: number;
+  acknowledgedAlerts: number;
+  unresolvedCriticalAlerts: number;
+  scheduledInspections: number;
+  inProgressInspections: number;
+  overdueInspections: number;
+  equipmentTotal: number;
+  equipmentActive: number;
+  equipmentFaulty: number;
+  energyTodayKwh: number;
+};
