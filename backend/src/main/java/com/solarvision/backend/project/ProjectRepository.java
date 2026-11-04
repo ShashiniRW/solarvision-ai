@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,7 +17,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     @Query("SELECT p FROM Project p LEFT JOIN FETCH p.organization LEFT JOIN FETCH p.customer WHERE p.id = :id")
     Optional<Project> findByIdWithDetails(Long id);
-
 
     // ids of the projects a user may see: their organisation's projects (staff only),
     // projects where they are the customer, and projects they are assigned to
@@ -30,4 +30,9 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Long> findAccessibleProjectIds(@Param("userId") Long userId,
                                         @Param("organizationId") Long organizationId,
                                         @Param("includeOrganization") boolean includeOrganization);
+
+    // the projects with the given ids (used to show a user only the projects they may see)
+    @Query("SELECT p FROM Project p LEFT JOIN FETCH p.organization LEFT JOIN FETCH p.customer WHERE p.id IN :ids")
+    List<Project> findByIdsWithDetails(@Param("ids") Collection<Long> ids);
+
 }
