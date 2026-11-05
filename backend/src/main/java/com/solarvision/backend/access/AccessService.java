@@ -61,9 +61,14 @@ public class AccessService {
         return scopeFor(currentEmail());
     }
 
+    /** True when the current user may see the project. */
+    public boolean canAccessProject(Long projectId) {
+        return currentScope().allows(projectId);
+    }
+
     /** Throws "Project not found" when the current user may not see the project. */
     public void requireProjectAccess(Long projectId) {
-        if (!currentScope().allows(projectId)) {
+        if (!canAccessProject(projectId)) {
             // 404 instead of 403: a stranger cannot tell whether the project exists
             throw new ResourceNotFoundException("Project not found");
         }

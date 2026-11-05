@@ -164,4 +164,15 @@ class AccessServiceTest {
         assertThatThrownBy(() -> service.requireProjectAccess(1L))
                 .isInstanceOf(IllegalStateException.class);
     }
+
+    @Test
+    void canAccessProject_isTrueOnlyForProjectsInScope() {
+        givenUser(7L, 5L, "ENGINEER");
+        when(projectRepository.findAccessibleProjectIds(7L, 5L, true)).thenReturn(List.of(1L));
+        loggedInAs(EMAIL);
+
+        assertThat(service.canAccessProject(1L)).isTrue();
+        assertThat(service.canAccessProject(2L)).isFalse();
+    }
+
 }
