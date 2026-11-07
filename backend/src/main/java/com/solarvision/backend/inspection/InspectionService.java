@@ -1,5 +1,7 @@
 package com.solarvision.backend.inspection;
 
+import com.solarvision.backend.access.AccessService;
+import com.solarvision.backend.access.ProjectScope;
 import com.solarvision.backend.alert.Alert;
 import com.solarvision.backend.alert.AlertRepository;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
@@ -26,6 +28,7 @@ public class InspectionService {
     private final EquipmentRepository equipmentRepository;
     private final AlertRepository alertRepository;
     private final UserRepository userRepository;
+    private final AccessService accessService;
     private static final int MAX_PAGE_SIZE = 100;
 
     @Transactional
@@ -34,6 +37,9 @@ public class InspectionService {
         if (request.getInspectionType() == InspectionType.ALERT_FOLLOW_UP && request.getAlertId() == null) {
             throw new IllegalArgumentException("An alert follow-up inspection must reference an alert");
         }
+
+        // inspections can only be scheduled on equipment the user may see
+        accessService.requireEquipmentAccess(request.getEquipmentId());
 
         Equipment equipment = equipmentRepository.findById(request.getEquipmentId())
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -63,10 +69,22 @@ public class InspectionService {
         return inspectionRepository.save(inspection);
     }
 
+    /**
+     * Loads an inspection, or throws 404 when it does not exist OR belongs to a project
+     * the current user may not see (same message, so both cases look identical).
+     * start / complete / cancel all go through here, so they are scoped too.
+     */
     @Transactional(readOnly = true)
     public Inspection getById(Long id) {
-        return inspectionRepository.findWithEquipmentById(id)
+        Inspection inspection = inspectionRepository.findWithEquipmentById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inspection not found with id: " + id));
+
+        // we are inside a transaction, so reading site -> project here is safe
+        Long projectId = inspection.getEquipment().getSite().getProject().getId();
+        if (!accessService.canAccessProject(projectId)) {
+            throw new ResourceNotFoundException("Inspection not found with id: " + id);
+        }
+        return inspection;
     }
 
     /** SCHEDULED -> IN_PROGRESS */
@@ -140,16 +158,31 @@ public class InspectionService {
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(safePage, safeSize);
 
-        if (status != null && equipmentId != null) {
-            return inspectionRepository.findByStatusAndEquipmentIdOrderByScheduledAtDesc(
-                    status, equipmentId, pageable);
-        }
-        if (status != null) {
-            return inspectionRepository.findByStatusOrderByScheduledAtDesc(status, pageable);
-        }
+        // 1. one equipment: check it first (404 if hidden), then the existing queries are safe
         if (equipmentId != null) {
-            return inspectionRepository.findByEquipmentIdOrderByScheduledAtDesc(equipmentId, pageable);
+            accessService.requireEquipmentAccess(equipmentId);
+            return status != null
+                    ? inspectionRepository.findByStatusAndEquipmentIdOrderByScheduledAtDesc(status, equipmentId, pageable)
+                    : inspectionRepository.findByEquipmentIdOrderByScheduledAtDesc(equipmentId, pageable);
         }
-        return inspectionRepository.findAllByOrderByScheduledAtDesc(pageable);
+
+        ProjectScope scope = accessService.currentScope();
+
+        // 2. ADMIN: everything
+        if (scope.unrestricted()) {
+            return status != null
+                    ? inspectionRepository.findByStatusOrderByScheduledAtDesc(status, pageable)
+                    : inspectionRepository.findAllByOrderByScheduledAtDesc(pageable);
+        }
+
+        // 3. a user with no projects sees nothing
+        if (scope.projectIds().isEmpty()) {
+            return List.of();
+        }
+
+        // 4. everyone else: the database filters by the user's projects
+        return status != null
+                ? inspectionRepository.findByStatusInProjects(status, scope.projectIds(), pageable)
+                : inspectionRepository.findInProjects(scope.projectIds(), pageable);
     }
 }
