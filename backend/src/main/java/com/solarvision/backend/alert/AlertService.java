@@ -1,5 +1,7 @@
 package com.solarvision.backend.alert;
 
+import com.solarvision.backend.access.AccessService;
+import com.solarvision.backend.access.ProjectScope;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.monitoring.SensorReading;
 import com.solarvision.backend.user.User;
@@ -24,10 +26,12 @@ public class AlertService {
     private final AlertRuleEvaluator ruleEvaluator;
     private final AlertRepository alertRepository;
     private final UserRepository userRepository;
+    private final AccessService accessService;
 
     /**
      * Runs the alert rules against a saved reading and raises an alert for every
      * broken rule that does not already have an unresolved alert.
+     * NOT scoped: called during ingestion, where nobody is logged in.
      *
      * @return how many NEW alerts were created
      */
@@ -60,29 +64,43 @@ public class AlertService {
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(safePage, safeSize);
 
-        if (status != null && equipmentId != null) {
-            return alertRepository.findByStatusAndEquipmentIdOrderByTriggeredAtDesc(status, equipmentId, pageable);
-        }
-        if (status != null) {
-            return alertRepository.findByStatusOrderByTriggeredAtDesc(status, pageable);
-        }
+        // 1. one equipment: check it first (404 if hidden), then the existing queries are safe
         if (equipmentId != null) {
-            return alertRepository.findByEquipmentIdOrderByTriggeredAtDesc(equipmentId, pageable);
+            accessService.requireEquipmentAccess(equipmentId);
+            return status != null
+                    ? alertRepository.findByStatusAndEquipmentIdOrderByTriggeredAtDesc(status, equipmentId, pageable)
+                    : alertRepository.findByEquipmentIdOrderByTriggeredAtDesc(equipmentId, pageable);
         }
-        return alertRepository.findAllByOrderByTriggeredAtDesc(pageable);
+
+        ProjectScope scope = accessService.currentScope();
+
+        // 2. ADMIN: everything
+        if (scope.unrestricted()) {
+            return status != null
+                    ? alertRepository.findByStatusOrderByTriggeredAtDesc(status, pageable)
+                    : alertRepository.findAllByOrderByTriggeredAtDesc(pageable);
+        }
+
+        // 3. a user with no projects sees nothing (no database call needed)
+        if (scope.projectIds().isEmpty()) {
+            return List.of();
+        }
+
+        // 4. everyone else: the database filters by the user's projects
+        return status != null
+                ? alertRepository.findByStatusInProjects(status, scope.projectIds(), pageable)
+                : alertRepository.findInProjects(scope.projectIds(), pageable);
     }
 
     @Transactional(readOnly = true)
     public Alert getById(Long id) {
-        return alertRepository.findWithEquipmentById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Alert not found with id: " + id));
+        return findVisibleAlert(id);
     }
 
     /** OPEN -> ACKNOWLEDGED */
     @Transactional
     public Alert acknowledge(Long alertId, String userEmail) {
-        Alert alert = alertRepository.findWithEquipmentById(alertId)
-                .orElseThrow(() -> new ResourceNotFoundException("Alert not found with id: " + alertId));
+        Alert alert = findVisibleAlert(alertId);
 
         if (alert.getStatus() != AlertStatus.OPEN) {
             throw new IllegalArgumentException(
@@ -98,8 +116,7 @@ public class AlertService {
     /** OPEN or ACKNOWLEDGED -> RESOLVED */
     @Transactional
     public Alert resolve(Long alertId, String userEmail) {
-        Alert alert = alertRepository.findWithEquipmentById(alertId)
-                .orElseThrow(() -> new ResourceNotFoundException("Alert not found with id: " + alertId));
+        Alert alert = findVisibleAlert(alertId);
 
         if (alert.getStatus() == AlertStatus.RESOLVED) {
             throw new IllegalArgumentException("Alert is already resolved");
@@ -109,6 +126,22 @@ public class AlertService {
         alert.setResolvedAt(OffsetDateTime.now());
         alert.setResolvedBy(userIdFor(userEmail));
         return alertRepository.save(alert);
+    }
+
+    /**
+     * Loads an alert, or throws 404 when it does not exist OR belongs to a project
+     * the current user may not see (same message, so the two cases look identical).
+     */
+    private Alert findVisibleAlert(Long id) {
+        Alert alert = alertRepository.findWithEquipmentById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Alert not found with id: " + id));
+
+        // we are inside a transaction, so reading site -> project here is safe
+        Long projectId = alert.getEquipment().getSite().getProject().getId();
+        if (!accessService.canAccessProject(projectId)) {
+            throw new ResourceNotFoundException("Alert not found with id: " + id);
+        }
+        return alert;
     }
 
     private Long userIdFor(String email) {

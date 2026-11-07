@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -58,11 +59,27 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
                                                                  Long equipmentId,
                                                                  Pageable pageable);
 
+    // NEW: scoped list - only alerts whose equipment belongs to one of the given projects
+    @EntityGraph(attributePaths = "equipment")
+    @Query("SELECT a FROM Alert a " +
+            "WHERE a.equipment.site.project.id IN :projectIds " +
+            "ORDER BY a.triggeredAt DESC")
+    List<Alert> findInProjects(@Param("projectIds") Collection<Long> projectIds,
+                               Pageable pageable);
+
+    // NEW: same, filtered by status
+    @EntityGraph(attributePaths = "equipment")
+    @Query("SELECT a FROM Alert a " +
+            "WHERE a.status = :status " +
+            "AND a.equipment.site.project.id IN :projectIds " +
+            "ORDER BY a.triggeredAt DESC")
+    List<Alert> findByStatusInProjects(@Param("status") AlertStatus status,
+                                       @Param("projectIds") Collection<Long> projectIds,
+                                       Pageable pageable);
+
 
     long countByStatus(AlertStatus status);
 
     // unresolved alerts (open or acknowledged) of one severity
     long countBySeverityAndStatusNot(AlertSeverity severity, AlertStatus status);
-
-
 }
