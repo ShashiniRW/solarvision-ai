@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,4 +46,12 @@ public interface SensorReadingRepository extends JpaRepository<SensorReading, Lo
             + "WHERE r.recordedAt >= :rangeStart AND r.recordedAt < :rangeEnd")
     BigDecimal sumEnergyBetween(@Param("rangeStart") OffsetDateTime rangeStart,
                                 @Param("rangeEnd") OffsetDateTime rangeEnd);
+
+    // NEW (dashboard): same total, but only for equipment in the given projects
+    @Query("SELECT SUM(r.energyKwh) FROM SensorReading r "
+            + "WHERE r.recordedAt >= :rangeStart AND r.recordedAt < :rangeEnd "
+            + "AND r.equipment.site.project.id IN :projectIds")
+    BigDecimal sumEnergyBetweenInProjects(@Param("rangeStart") OffsetDateTime rangeStart,
+                                          @Param("rangeEnd") OffsetDateTime rangeEnd,
+                                          @Param("projectIds") Collection<Long> projectIds);
 }

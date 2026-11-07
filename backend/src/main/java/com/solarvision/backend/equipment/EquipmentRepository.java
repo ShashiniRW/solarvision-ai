@@ -2,8 +2,10 @@ package com.solarvision.backend.equipment;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,7 +41,17 @@ public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
     long countByStatus(String status);
     boolean existsByQrCode(String qrCode);
 
-    // NEW: only the project id of an equipment (no entity loading, no lazy-loading risk)
+    // only the project id of an equipment (no entity loading, no lazy-loading risk)
     @Query("SELECT e.site.project.id FROM Equipment e WHERE e.id = :id")
     Optional<Long> findProjectIdById(Long id);
+
+    // NEW (dashboard): counts limited to the given projects
+    @Query("SELECT COUNT(e) FROM Equipment e WHERE e.site.project.id IN :projectIds")
+    long countInProjects(@Param("projectIds") Collection<Long> projectIds);
+
+    @Query("SELECT COUNT(e) FROM Equipment e " +
+            "WHERE e.status = :status " +
+            "AND e.site.project.id IN :projectIds")
+    long countByStatusInProjects(@Param("status") String status,
+                                 @Param("projectIds") Collection<Long> projectIds);
 }

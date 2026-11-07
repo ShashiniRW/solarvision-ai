@@ -31,7 +31,7 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
                                                                       Long equipmentId,
                                                                       Pageable pageable);
 
-    // NEW: scoped list - only inspections whose equipment belongs to one of the given projects
+    // scoped list - only inspections whose equipment belongs to one of the given projects
     @EntityGraph(attributePaths = "equipment")
     @Query("SELECT i FROM Inspection i " +
             "WHERE i.equipment.site.project.id IN :projectIds " +
@@ -39,7 +39,7 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
     List<Inspection> findInProjects(@Param("projectIds") Collection<Long> projectIds,
                                     Pageable pageable);
 
-    // NEW: same, filtered by status
+    // same, filtered by status
     @EntityGraph(attributePaths = "equipment")
     @Query("SELECT i FROM Inspection i " +
             "WHERE i.status = :status " +
@@ -54,4 +54,20 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
 
     // scheduled inspections whose time has already passed
     long countByStatusAndScheduledAtBefore(InspectionStatus status, OffsetDateTime time);
+
+    // NEW (dashboard): count by status, limited to the given projects
+    @Query("SELECT COUNT(i) FROM Inspection i " +
+            "WHERE i.status = :status " +
+            "AND i.equipment.site.project.id IN :projectIds")
+    long countByStatusInProjects(@Param("status") InspectionStatus status,
+                                 @Param("projectIds") Collection<Long> projectIds);
+
+    // NEW (dashboard): overdue inspections, limited to the given projects
+    @Query("SELECT COUNT(i) FROM Inspection i " +
+            "WHERE i.status = :status " +
+            "AND i.scheduledAt < :time " +
+            "AND i.equipment.site.project.id IN :projectIds")
+    long countByStatusAndScheduledAtBeforeInProjects(@Param("status") InspectionStatus status,
+                                                     @Param("time") OffsetDateTime time,
+                                                     @Param("projectIds") Collection<Long> projectIds);
 }

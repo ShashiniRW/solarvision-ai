@@ -59,7 +59,7 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
                                                                  Long equipmentId,
                                                                  Pageable pageable);
 
-    // NEW: scoped list - only alerts whose equipment belongs to one of the given projects
+    // scoped list - only alerts whose equipment belongs to one of the given projects
     @EntityGraph(attributePaths = "equipment")
     @Query("SELECT a FROM Alert a " +
             "WHERE a.equipment.site.project.id IN :projectIds " +
@@ -67,7 +67,7 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     List<Alert> findInProjects(@Param("projectIds") Collection<Long> projectIds,
                                Pageable pageable);
 
-    // NEW: same, filtered by status
+    // same, filtered by status
     @EntityGraph(attributePaths = "equipment")
     @Query("SELECT a FROM Alert a " +
             "WHERE a.status = :status " +
@@ -82,4 +82,20 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
 
     // unresolved alerts (open or acknowledged) of one severity
     long countBySeverityAndStatusNot(AlertSeverity severity, AlertStatus status);
+
+    // NEW (dashboard): counts limited to the given projects
+    @Query("SELECT COUNT(a) FROM Alert a " +
+            "WHERE a.status = :status " +
+            "AND a.equipment.site.project.id IN :projectIds")
+    long countByStatusInProjects(@Param("status") AlertStatus status,
+                                 @Param("projectIds") Collection<Long> projectIds);
+
+    // NEW (dashboard): unresolved alerts of one severity, limited to the given projects
+    @Query("SELECT COUNT(a) FROM Alert a " +
+            "WHERE a.severity = :severity " +
+            "AND a.status <> :status " +
+            "AND a.equipment.site.project.id IN :projectIds")
+    long countBySeverityAndStatusNotInProjects(@Param("severity") AlertSeverity severity,
+                                               @Param("status") AlertStatus status,
+                                               @Param("projectIds") Collection<Long> projectIds);
 }
