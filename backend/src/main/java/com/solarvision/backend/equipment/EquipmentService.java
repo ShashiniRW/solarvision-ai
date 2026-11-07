@@ -1,5 +1,6 @@
 package com.solarvision.backend.equipment;
 
+import com.solarvision.backend.access.AccessService;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.equipment.dto.EquipmentRequest;
 import com.solarvision.backend.project.Site;
@@ -16,10 +17,14 @@ public class EquipmentService {
 
     private final EquipmentRepository equipmentRepository;
     private final SiteRepository siteRepository;
+    private final AccessService accessService;
 
-    public EquipmentService(EquipmentRepository equipmentRepository, SiteRepository siteRepository) {
+    public EquipmentService(EquipmentRepository equipmentRepository,
+                            SiteRepository siteRepository,
+                            AccessService accessService) {
         this.equipmentRepository = equipmentRepository;
         this.siteRepository = siteRepository;
+        this.accessService = accessService;
     }
 
     public Equipment createEquipment(EquipmentRequest request) {
@@ -29,12 +34,12 @@ public class EquipmentService {
                     "Invalid equipment type. Must be one of: " + VALID_TYPES);
         }
 
+        // access check first, so a stranger cannot probe which QR codes exist
+        Site site = findAccessibleSite(request.getSiteId());
+
         if (equipmentRepository.existsByQrCode(request.getQrCode())) {
             throw new IllegalArgumentException("QR code is already in use");
         }
-
-        Site site = siteRepository.findById(request.getSiteId())
-                .orElseThrow(() -> new ResourceNotFoundException("Site not found"));
 
         Equipment equipment = new Equipment();
         equipment.setSite(site);
@@ -54,16 +59,46 @@ public class EquipmentService {
     }
 
     public List<Equipment> getEquipmentBySite(Long siteId) {
+        findAccessibleSite(siteId);
         return equipmentRepository.findBySiteIdWithDetails(siteId);
     }
 
     public Equipment getEquipmentById(Long id) {
-        return equipmentRepository.findByIdWithDetails(id)
+        Equipment equipment = equipmentRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found"));
+        requireVisible(equipment, "Equipment not found");
+        return equipment;
     }
 
     public Equipment getEquipmentByQrCode(String qrCode) {
-        return equipmentRepository.findByQrCode(qrCode)
-                .orElseThrow(() -> new ResourceNotFoundException("Equipment not found for this QR code"));
+        String message = "Equipment not found for this QR code";
+
+        Equipment found = equipmentRepository.findByQrCode(qrCode)
+                .orElseThrow(() -> new ResourceNotFoundException(message));
+
+        // reload with site + project fetched, so reading the project id is safe
+        Equipment equipment = equipmentRepository.findByIdWithDetails(found.getId())
+                .orElseThrow(() -> new ResourceNotFoundException(message));
+
+        requireVisible(equipment, message);
+        return equipment;
+    }
+
+    /** A site the user may not see looks exactly like a site that does not exist. */
+    private Site findAccessibleSite(Long siteId) {
+        Site site = siteRepository.findByIdWithDetails(siteId)
+                .orElseThrow(() -> new ResourceNotFoundException("Site not found"));
+
+        if (!accessService.canAccessProject(site.getProject().getId())) {
+            throw new ResourceNotFoundException("Site not found");
+        }
+        return site;
+    }
+
+    private void requireVisible(Equipment equipment, String notFoundMessage) {
+        Long projectId = equipment.getSite().getProject().getId();
+        if (!accessService.canAccessProject(projectId)) {
+            throw new ResourceNotFoundException(notFoundMessage);
+        }
     }
 }
