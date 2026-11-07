@@ -1,6 +1,7 @@
 package com.solarvision.backend.access;
 
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
+import com.solarvision.backend.equipment.EquipmentRepository; // NEW (1) import
 import com.solarvision.backend.project.ProjectRepository;
 import com.solarvision.backend.user.Role;
 import com.solarvision.backend.user.User;
@@ -34,6 +35,7 @@ public class AccessService {
 
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
+    private final EquipmentRepository equipmentRepository; // NEW (2) field (Lombok injects it)
 
     @Transactional(readOnly = true)
     public ProjectScope scopeFor(String email) {
@@ -71,6 +73,20 @@ public class AccessService {
         if (!canAccessProject(projectId)) {
             // 404 instead of 403: a stranger cannot tell whether the project exists
             throw new ResourceNotFoundException("Project not found");
+        }
+    }
+
+    // NEW (3) method
+    /**
+     * Throws "Equipment not found" when the equipment does not exist
+     * or belongs to a project the current user may not see.
+     */
+    public void requireEquipmentAccess(Long equipmentId) {
+        Long projectId = equipmentRepository.findProjectIdById(equipmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment not found"));
+
+        if (!canAccessProject(projectId)) {
+            throw new ResourceNotFoundException("Equipment not found");
         }
     }
 

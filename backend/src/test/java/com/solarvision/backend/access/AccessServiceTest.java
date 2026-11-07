@@ -1,6 +1,7 @@
 package com.solarvision.backend.access;
 
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
+import com.solarvision.backend.equipment.EquipmentRepository; // NEW (1) import
 import com.solarvision.backend.organization.Organization;
 import com.solarvision.backend.project.ProjectRepository;
 import com.solarvision.backend.user.Role;
@@ -41,6 +42,9 @@ class AccessServiceTest {
 
     @Mock
     private ProjectRepository projectRepository;
+
+    @Mock
+    private EquipmentRepository equipmentRepository; // NEW (2) mock
 
     @InjectMocks
     private AccessService service;
@@ -173,6 +177,39 @@ class AccessServiceTest {
 
         assertThat(service.canAccessProject(1L)).isTrue();
         assertThat(service.canAccessProject(2L)).isFalse();
+    }
+
+    // ---------- requireEquipmentAccess ---------- NEW (3) tests
+
+    @Test
+    void requireEquipmentAccess_passes_whenEquipmentProjectIsInScope() {
+        givenUser(7L, 5L, "ENGINEER");
+        when(projectRepository.findAccessibleProjectIds(7L, 5L, true)).thenReturn(List.of(1L));
+        when(equipmentRepository.findProjectIdById(10L)).thenReturn(Optional.of(1L));
+        loggedInAs(EMAIL);
+
+        assertThatCode(() -> service.requireEquipmentAccess(10L)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void requireEquipmentAccess_throws404_whenEquipmentProjectIsOutOfScope() {
+        givenUser(7L, 5L, "ENGINEER");
+        when(projectRepository.findAccessibleProjectIds(7L, 5L, true)).thenReturn(List.of(2L));
+        when(equipmentRepository.findProjectIdById(10L)).thenReturn(Optional.of(1L));
+        loggedInAs(EMAIL);
+
+        assertThatThrownBy(() -> service.requireEquipmentAccess(10L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Equipment not found");
+    }
+
+    @Test
+    void requireEquipmentAccess_throws404_whenEquipmentDoesNotExist() {
+        when(equipmentRepository.findProjectIdById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.requireEquipmentAccess(99L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Equipment not found");
     }
 
 }

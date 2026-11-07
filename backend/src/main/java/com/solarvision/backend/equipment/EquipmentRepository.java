@@ -38,4 +38,8 @@ public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
 
     long countByStatus(String status);
     boolean existsByQrCode(String qrCode);
+
+    // NEW: only the project id of an equipment (no entity loading, no lazy-loading risk)
+    @Query("SELECT e.site.project.id FROM Equipment e WHERE e.id = :id")
+    Optional<Long> findProjectIdById(Long id);
 }
