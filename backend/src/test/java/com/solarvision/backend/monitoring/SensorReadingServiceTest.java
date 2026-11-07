@@ -1,5 +1,6 @@
 package com.solarvision.backend.monitoring;
 
+import com.solarvision.backend.access.AccessService;
 import com.solarvision.backend.alert.AlertService;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.equipment.Equipment;
@@ -20,8 +21,11 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,6 +42,9 @@ class SensorReadingServiceTest {
 
     @Mock
     private AlertService alertService;
+
+    @Mock
+    private AccessService accessService; // by default: access allowed (does nothing)
 
     @InjectMocks
     private SensorReadingService service;
@@ -58,7 +65,13 @@ class SensorReadingServiceTest {
         return request;
     }
 
-    // ---------- create ----------
+    /** Makes the equipment invisible to the current user (or non-existent). */
+    private void equipmentIsHidden() {
+        doThrow(new ResourceNotFoundException("Equipment not found"))
+                .when(accessService).requireEquipmentAccess(EQUIPMENT_ID);
+    }
+
+    // ---------- create (ingestion is NOT scoped) ----------
 
     @Test
     void create_savesReading_andDefaultsToSimulated() {
@@ -74,6 +87,8 @@ class SensorReadingServiceTest {
         assertThat(result.getPowerKw()).isEqualByComparingTo("4.250");
         assertThat(result.getIsSimulated()).isTrue();
         verify(sensorReadingRepository).save(any(SensorReading.class));
+        // ingestion has no logged-in user, so it must never ask AccessService
+        verifyNoInteractions(accessService);
     }
 
     @Test
@@ -129,8 +144,27 @@ class SensorReadingServiceTest {
     // ---------- getLatest ----------
 
     @Test
+    void getLatest_returnsReading_whenEquipmentIsVisible() {
+        SensorReading reading = new SensorReading();
+        when(sensorReadingRepository.findFirstByEquipmentIdOrderByRecordedAtDesc(EQUIPMENT_ID))
+                .thenReturn(Optional.of(reading));
+
+        assertThat(service.getLatest(EQUIPMENT_ID)).isSameAs(reading);
+        verify(accessService).requireEquipmentAccess(EQUIPMENT_ID);
+    }
+
+    @Test
+    void getLatest_throws404_andReadsNothing_whenEquipmentIsHidden() {
+        equipmentIsHidden();
+
+        assertThatThrownBy(() -> service.getLatest(EQUIPMENT_ID))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Equipment not found");
+        verify(sensorReadingRepository, never()).findFirstByEquipmentIdOrderByRecordedAtDesc(anyLong());
+    }
+
+    @Test
     void getLatest_throwsNotFound_whenEquipmentHasNoReadings() {
-        when(equipmentRepository.existsById(EQUIPMENT_ID)).thenReturn(true);
         when(sensorReadingRepository.findFirstByEquipmentIdOrderByRecordedAtDesc(EQUIPMENT_ID))
                 .thenReturn(Optional.empty());
 
@@ -142,17 +176,25 @@ class SensorReadingServiceTest {
     // ---------- getRange ----------
 
     @Test
-    void getRange_throwsNotFound_whenEquipmentDoesNotExist() {
-        when(equipmentRepository.existsById(EQUIPMENT_ID)).thenReturn(false);
+    void getRange_throws404_whenEquipmentIsHidden() {
+        equipmentIsHidden();
 
         assertThatThrownBy(() -> service.getRange(EQUIPMENT_ID, RECORDED_AT, RECORDED_AT.plusHours(1)))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Equipment not found");
+    }
+
+    @Test
+    void getRange_hiddenEquipment_gets404_evenWithInvalidDates() {
+        equipmentIsHidden();
+
+        // 'from' after 'to' would be a 400, but a stranger must see 404 first
+        assertThatThrownBy(() -> service.getRange(EQUIPMENT_ID, RECORDED_AT.plusHours(1), RECORDED_AT))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
     void getRange_rejects_whenFromIsNotBeforeTo() {
-        when(equipmentRepository.existsById(EQUIPMENT_ID)).thenReturn(true);
-
         assertThatThrownBy(() -> service.getRange(EQUIPMENT_ID, RECORDED_AT.plusHours(1), RECORDED_AT))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("'from' must be earlier than 'to'");
@@ -160,8 +202,6 @@ class SensorReadingServiceTest {
 
     @Test
     void getRange_rejects_whenRangeIsJustOver31Days() {
-        when(equipmentRepository.existsById(EQUIPMENT_ID)).thenReturn(true);
-
         OffsetDateTime from = OffsetDateTime.parse("2026-01-01T00:00:00Z");
         OffsetDateTime to = from.plusDays(31).plusSeconds(1);
 
@@ -172,8 +212,6 @@ class SensorReadingServiceTest {
 
     @Test
     void getRange_allows_rangeOfExactly31Days() {
-        when(equipmentRepository.existsById(EQUIPMENT_ID)).thenReturn(true);
-
         OffsetDateTime from = OffsetDateTime.parse("2026-01-01T00:00:00Z");
         OffsetDateTime to = from.plusDays(31);
         when(sensorReadingRepository
@@ -186,9 +224,17 @@ class SensorReadingServiceTest {
     // ---------- getDailySummary ----------
 
     @Test
-    void getDailySummary_rejects_whenRangeIsLongerThan92Days() {
-        when(equipmentRepository.existsById(EQUIPMENT_ID)).thenReturn(true);
+    void getDailySummary_throws404_whenEquipmentIsHidden() {
+        equipmentIsHidden();
 
+        assertThatThrownBy(() -> service.getDailySummary(
+                EQUIPMENT_ID, LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 7)))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Equipment not found");
+    }
+
+    @Test
+    void getDailySummary_rejects_whenRangeIsLongerThan92Days() {
         assertThatThrownBy(() -> service.getDailySummary(
                 EQUIPMENT_ID, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 10, 14)))
                 .isInstanceOf(IllegalArgumentException.class)

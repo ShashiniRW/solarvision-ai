@@ -1,5 +1,6 @@
 package com.solarvision.backend.monitoring;
 
+import com.solarvision.backend.access.AccessService;
 import com.solarvision.backend.alert.AlertService;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.equipment.Equipment;
@@ -23,10 +24,12 @@ public class SensorReadingService {
     private final SensorReadingRepository sensorReadingRepository;
     private final EquipmentRepository equipmentRepository;
     private final AlertService alertService;
+    private final AccessService accessService;
 
     // For now every site uses one time zone; later this will come from the site
     private static final ZoneId SITE_ZONE = ZoneId.of("Asia/Colombo");
 
+    /** Ingestion: NOT scoped (devices/simulator post readings; device auth comes later). */
     @Transactional
     public SensorReading create(CreateSensorReadingRequest request) {
 
@@ -68,9 +71,9 @@ public class SensorReadingService {
 
     @Transactional(readOnly = true)
     public SensorReading getLatest(Long equipmentId) {
-        if (!equipmentRepository.existsById(equipmentId)) {
-            throw new ResourceNotFoundException("Equipment not found with id: " + equipmentId);
-        }
+        // 404 if the equipment does not exist OR the user may not see it
+        accessService.requireEquipmentAccess(equipmentId);
+
         return sensorReadingRepository.findFirstByEquipmentIdOrderByRecordedAtDesc(equipmentId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No readings found for equipment id: " + equipmentId));
@@ -78,9 +81,9 @@ public class SensorReadingService {
 
     @Transactional(readOnly = true)
     public List<SensorReading> getRange(Long equipmentId, OffsetDateTime from, OffsetDateTime to) {
-        if (!equipmentRepository.existsById(equipmentId)) {
-            throw new ResourceNotFoundException("Equipment not found with id: " + equipmentId);
-        }
+        // access first, so a stranger gets 404 rather than a 400 that hints the equipment exists
+        accessService.requireEquipmentAccess(equipmentId);
+
         if (!from.isBefore(to)) {
             throw new IllegalArgumentException("'from' must be earlier than 'to'");
         }
@@ -93,9 +96,8 @@ public class SensorReadingService {
 
     @Transactional(readOnly = true)
     public List<DailyEnergySummaryResponse> getDailySummary(Long equipmentId, LocalDate from, LocalDate to) {
-        if (!equipmentRepository.existsById(equipmentId)) {
-            throw new ResourceNotFoundException("Equipment not found with id: " + equipmentId);
-        }
+        accessService.requireEquipmentAccess(equipmentId);
+
         if (from.isAfter(to)) {
             throw new IllegalArgumentException("'from' must not be later than 'to'");
         }
