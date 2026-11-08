@@ -74,11 +74,8 @@ public class EquipmentService {
     public Equipment getEquipmentByQrCode(String qrCode) {
         String message = "Equipment not found for this QR code";
 
-        Equipment found = equipmentRepository.findByQrCode(qrCode)
-                .orElseThrow(() -> new ResourceNotFoundException(message));
-
-        // reload with site + project fetched, so reading the project id is safe
-        Equipment equipment = equipmentRepository.findByIdWithDetails(found.getId())
+        // findByQrCode already loads site + project (JOIN FETCH), so no second query is needed
+        Equipment equipment = equipmentRepository.findByQrCode(qrCode)
                 .orElseThrow(() -> new ResourceNotFoundException(message));
 
         requireVisible(equipment, message);

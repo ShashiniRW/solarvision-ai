@@ -115,12 +115,22 @@ class EquipmentServiceTest {
     void getEquipmentByQrCode_throws404_whenProjectIsNotVisible() {
         Equipment equipment = equipmentAt(10L, siteOfProject(1L, 1L));
         when(equipmentRepository.findByQrCode("QR-1")).thenReturn(Optional.of(equipment));
-        when(equipmentRepository.findByIdWithDetails(10L)).thenReturn(Optional.of(equipment));
         when(accessService.canAccessProject(1L)).thenReturn(false);
 
         assertThatThrownBy(() -> service.getEquipmentByQrCode("QR-1"))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Equipment not found for this QR code");
+    }
+
+    @Test
+    void getEquipmentByQrCode_returnsEquipment_withoutReloading_whenVisible() {
+        Equipment equipment = equipmentAt(10L, siteOfProject(1L, 1L));
+        when(equipmentRepository.findByQrCode("QR-1")).thenReturn(Optional.of(equipment));
+        when(accessService.canAccessProject(1L)).thenReturn(true);
+
+        assertThat(service.getEquipmentByQrCode("QR-1")).isSameAs(equipment);
+        // only ONE query: the old second lookup by id must be gone
+        verify(equipmentRepository, never()).findByIdWithDetails(anyLong());
     }
 
     // ---------- createEquipment ----------
