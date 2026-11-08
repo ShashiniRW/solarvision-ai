@@ -9,6 +9,9 @@ import type { Alert, DashboardSummary } from "@/lib/types";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
+  
+  // ADMIN sees every project; everyone else only the projects they belong to
+  const seesAllProjects = user.roles.includes("ADMIN");
 
   // all three requests run at the same time
   const [summary, openAlerts, acknowledgedAlerts] = await Promise.all([
@@ -57,7 +60,7 @@ export default async function DashboardPage() {
         <SummaryCard
           label="Energy today"
           value={`${summary.energyTodayKwh.toFixed(2)} kWh`}
-          hint="All equipment, Colombo day"
+          hint={seesAllProjects ? "All equipment, Colombo day" : "Your equipment, Colombo day"}
         />
         <SummaryCard
           label="Active equipment"
