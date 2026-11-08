@@ -1,0 +1,18 @@
+# Shared formatting rules for every editor (IntelliJ, VS Code, ...)
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{java,xml,sql,properties}]
+indent_size = 4
+
+[*.{ts,tsx,js,mjs,json,css,yml,yaml}]
+indent_size = 2
+
+# in Markdown, two trailing spaces mean a line break, so keep them
+[*.md]
+trim_trailing_whitespace = false
