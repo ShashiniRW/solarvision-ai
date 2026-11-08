@@ -2,6 +2,7 @@ package com.solarvision.backend.monitoring;
 
 import com.solarvision.backend.access.AccessService;
 import com.solarvision.backend.alert.AlertService;
+import com.solarvision.backend.common.exception.ConflictException;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.equipment.Equipment;
 import com.solarvision.backend.equipment.EquipmentRepository;
@@ -136,7 +137,7 @@ class SensorReadingServiceTest {
         CreateSensorReadingRequest request = requestWithPower(new BigDecimal("4.250"));
 
         assertThatThrownBy(() -> service.create(request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("already exists");
         verify(sensorReadingRepository, never()).save(any(SensorReading.class));
     }

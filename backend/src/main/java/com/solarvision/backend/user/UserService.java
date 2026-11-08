@@ -1,5 +1,6 @@
 package com.solarvision.backend.user;
 
+import com.solarvision.backend.common.exception.ConflictException;
 import com.solarvision.backend.common.exception.InvalidCredentialsException;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.organization.Organization;
@@ -41,7 +42,7 @@ public class UserService {
     public User registerUser(RegisterRequest request) {
 
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email is already registered");
+            throw new ConflictException("Email is already registered");
         }
 
         Organization organization = organizationRepository.findById(request.getOrganizationId())

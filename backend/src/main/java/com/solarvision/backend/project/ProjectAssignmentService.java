@@ -1,5 +1,6 @@
 package com.solarvision.backend.project;
 
+import com.solarvision.backend.common.exception.ConflictException;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.project.dto.AssignmentRequest;
 import com.solarvision.backend.user.User;
@@ -34,7 +35,7 @@ public class ProjectAssignmentService {
         }
 
         if (assignmentRepository.existsByProjectIdAndUserId(request.getProjectId(), request.getUserId())) {
-            throw new IllegalArgumentException("User is already assigned to this project");
+            throw new ConflictException("User is already assigned to this project");
         }
 
         Project project = projectRepository.findById(request.getProjectId())

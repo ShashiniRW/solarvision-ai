@@ -4,6 +4,7 @@ import com.solarvision.backend.access.AccessService;
 import com.solarvision.backend.access.ProjectScope;
 import com.solarvision.backend.alert.Alert;
 import com.solarvision.backend.alert.AlertRepository;
+import com.solarvision.backend.common.exception.ConflictException;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.equipment.Equipment;
 import com.solarvision.backend.equipment.EquipmentRepository;
@@ -281,7 +282,7 @@ class InspectionServiceTest {
         givenInspection(inspection(InspectionStatus.IN_PROGRESS));
 
         assertThatThrownBy(() -> service.start(INSPECTION_ID, EMAIL))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("Only a SCHEDULED inspection");
         verify(inspectionRepository, never()).save(any(Inspection.class));
     }
@@ -340,7 +341,7 @@ class InspectionServiceTest {
 
         assertThatThrownBy(() ->
                 service.complete(INSPECTION_ID, completeRequest(InspectionResult.PASSED, null)))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("Only an IN_PROGRESS inspection");
         verify(inspectionRepository, never()).save(any(Inspection.class));
     }
@@ -363,7 +364,7 @@ class InspectionServiceTest {
         givenInspection(inspection(InspectionStatus.COMPLETED));
 
         assertThatThrownBy(() -> service.cancel(INSPECTION_ID, null))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("cannot be cancelled");
         verify(inspectionRepository, never()).save(any(Inspection.class));
     }

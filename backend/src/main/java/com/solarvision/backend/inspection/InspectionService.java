@@ -4,6 +4,7 @@ import com.solarvision.backend.access.AccessService;
 import com.solarvision.backend.access.ProjectScope;
 import com.solarvision.backend.alert.Alert;
 import com.solarvision.backend.alert.AlertRepository;
+import com.solarvision.backend.common.exception.ConflictException;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.equipment.Equipment;
 import com.solarvision.backend.equipment.EquipmentRepository;
@@ -93,7 +94,7 @@ public class InspectionService {
         Inspection inspection = getById(id);
 
         if (inspection.getStatus() != InspectionStatus.SCHEDULED) {
-            throw new IllegalArgumentException(
+            throw new ConflictException(
                     "Only a SCHEDULED inspection can be started (current status: " + inspection.getStatus() + ")");
         }
 
@@ -112,7 +113,7 @@ public class InspectionService {
         Inspection inspection = getById(id);
 
         if (inspection.getStatus() != InspectionStatus.IN_PROGRESS) {
-            throw new IllegalArgumentException(
+            throw new ConflictException(
                     "Only an IN_PROGRESS inspection can be completed (current status: " + inspection.getStatus() + ")");
         }
 
@@ -135,7 +136,7 @@ public class InspectionService {
 
         if (inspection.getStatus() == InspectionStatus.COMPLETED
                 || inspection.getStatus() == InspectionStatus.CANCELLED) {
-            throw new IllegalArgumentException(
+            throw new ConflictException(
                     "A " + inspection.getStatus() + " inspection cannot be cancelled");
         }
 

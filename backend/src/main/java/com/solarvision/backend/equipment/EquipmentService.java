@@ -1,6 +1,7 @@
 package com.solarvision.backend.equipment;
 
 import com.solarvision.backend.access.AccessService;
+import com.solarvision.backend.common.exception.ConflictException;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.equipment.dto.EquipmentRequest;
 import com.solarvision.backend.project.Site;
@@ -38,7 +39,7 @@ public class EquipmentService {
         Site site = findAccessibleSite(request.getSiteId());
 
         if (equipmentRepository.existsByQrCode(request.getQrCode())) {
-            throw new IllegalArgumentException("QR code is already in use");
+            throw new ConflictException("QR code is already in use");
         }
 
         Equipment equipment = new Equipment();

@@ -2,6 +2,7 @@ package com.solarvision.backend.alert;
 
 import com.solarvision.backend.access.AccessService;
 import com.solarvision.backend.access.ProjectScope;
+import com.solarvision.backend.common.exception.ConflictException;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.equipment.Equipment;
 import com.solarvision.backend.project.Project;
@@ -116,7 +117,7 @@ class AlertServiceTest {
         givenVisibleAlert(AlertStatus.ACKNOWLEDGED);
 
         assertThatThrownBy(() -> service.acknowledge(ALERT_ID, EMAIL))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("Only an OPEN alert");
         verify(alertRepository, never()).save(any(Alert.class));
     }
@@ -126,7 +127,7 @@ class AlertServiceTest {
         givenVisibleAlert(AlertStatus.RESOLVED);
 
         assertThatThrownBy(() -> service.acknowledge(ALERT_ID, EMAIL))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(ConflictException.class);
         verify(alertRepository, never()).save(any(Alert.class));
     }
 
@@ -191,7 +192,7 @@ class AlertServiceTest {
         givenVisibleAlert(AlertStatus.RESOLVED);
 
         assertThatThrownBy(() -> service.resolve(ALERT_ID, EMAIL))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("already resolved");
         verify(alertRepository, never()).save(any(Alert.class));
     }

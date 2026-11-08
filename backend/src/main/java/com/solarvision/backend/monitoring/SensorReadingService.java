@@ -2,6 +2,7 @@ package com.solarvision.backend.monitoring;
 
 import com.solarvision.backend.access.AccessService;
 import com.solarvision.backend.alert.AlertService;
+import com.solarvision.backend.common.exception.ConflictException;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.equipment.Equipment;
 import com.solarvision.backend.equipment.EquipmentRepository;
@@ -61,7 +62,7 @@ public class SensorReadingService {
         }
 
         if (sensorReadingRepository.existsByEquipmentIdAndRecordedAt(equipment.getId(), recordedAt)) {
-            throw new IllegalArgumentException(
+            throw new ConflictException(
                     "A reading already exists for this equipment at " + recordedAt);
         }
 

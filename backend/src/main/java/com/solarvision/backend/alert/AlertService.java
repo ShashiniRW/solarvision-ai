@@ -2,6 +2,7 @@ package com.solarvision.backend.alert;
 
 import com.solarvision.backend.access.AccessService;
 import com.solarvision.backend.access.ProjectScope;
+import com.solarvision.backend.common.exception.ConflictException;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.monitoring.SensorReading;
 import com.solarvision.backend.user.User;
@@ -103,7 +104,7 @@ public class AlertService {
         Alert alert = findVisibleAlert(alertId);
 
         if (alert.getStatus() != AlertStatus.OPEN) {
-            throw new IllegalArgumentException(
+            throw new ConflictException(
                     "Only an OPEN alert can be acknowledged (current status: " + alert.getStatus() + ")");
         }
 
@@ -119,7 +120,7 @@ public class AlertService {
         Alert alert = findVisibleAlert(alertId);
 
         if (alert.getStatus() == AlertStatus.RESOLVED) {
-            throw new IllegalArgumentException("Alert is already resolved");
+            throw new ConflictException("Alert is already resolved");
         }
 
         alert.setStatus(AlertStatus.RESOLVED);
