@@ -61,4 +61,16 @@ class DatabaseUserDetailsServiceTest {
         assertThatThrownBy(() -> service.loadUserByUsername(EMAIL))
                 .isInstanceOf(UsernameNotFoundException.class);
     }
+
+
+    @Test
+    void inactiveUser_isDisabled() {
+        User user = new User();
+        user.setEmail(EMAIL);
+        user.setPasswordHash("$2a$10$hash");
+        user.setStatus("INACTIVE");
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+
+        assertThat(service.loadUserByUsername(EMAIL).isEnabled()).isFalse();
+    }
 }

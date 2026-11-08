@@ -59,6 +59,11 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
+    /** Only ACTIVE users may log in or use a token. */
+    public boolean isActive() {
+        return "ACTIVE".equals(status);
+    }
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

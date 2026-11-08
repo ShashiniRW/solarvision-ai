@@ -43,14 +43,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (jwtUtil.validateToken(token)) {
                 String email = jwtUtil.getEmailFromToken(token);
 
-                userRepository.findByEmail(email).ifPresent(user -> {
-                    List<GrantedAuthority> authorities = buildAuthorities(user);
+                userRepository.findByEmail(email)
+                        // NEW: a deactivated account loses access at once, even with a valid token
+                        .filter(User::isActive)
+                        .ifPresent(user -> {
+                            List<GrantedAuthority> authorities = buildAuthorities(user);
 
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(email, null, authorities);
+                            UsernamePasswordAuthenticationToken authentication =
+                                    new UsernamePasswordAuthenticationToken(email, null, authorities);
 
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                });
+                            SecurityContextHolder.getContext().setAuthentication(authentication);
+                        });
             }
         }
 

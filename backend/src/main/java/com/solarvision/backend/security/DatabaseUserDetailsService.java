@@ -39,6 +39,7 @@ public class DatabaseUserDetailsService implements UserDetailsService {
                 .withUsername(user.getEmail())
                 .password(user.getPasswordHash())
                 .roles(roles)          // adds the "ROLE_" prefix, same as the JWT filter
+                .disabled(!user.isActive())
                 .build();
     }
 }
