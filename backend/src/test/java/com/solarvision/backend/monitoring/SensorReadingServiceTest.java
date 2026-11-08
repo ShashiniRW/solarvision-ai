@@ -141,6 +141,33 @@ class SensorReadingServiceTest {
         verify(sensorReadingRepository, never()).save(any(SensorReading.class));
     }
 
+
+    @Test
+    void create_rejectsReading_moreThan5MinutesInTheFuture() {
+        when(equipmentRepository.findById(EQUIPMENT_ID)).thenReturn(Optional.of(equipment()));
+
+        CreateSensorReadingRequest request = requestWithPower(new BigDecimal("4.250"));
+        request.setRecordedAt(OffsetDateTime.now().plusHours(1));
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("in the future");
+        verify(sensorReadingRepository, never()).save(any(SensorReading.class));
+    }
+
+    @Test
+    void create_allowsSmallClockDifference_ofOneMinute() {
+        when(equipmentRepository.findById(EQUIPMENT_ID)).thenReturn(Optional.of(equipment()));
+        when(sensorReadingRepository.save(any(SensorReading.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        CreateSensorReadingRequest request = requestWithPower(new BigDecimal("4.250"));
+        request.setRecordedAt(OffsetDateTime.now().plusMinutes(1));
+
+        assertThat(service.create(request)).isNotNull();
+        verify(sensorReadingRepository).save(any(SensorReading.class));
+    }
+
     // ---------- getLatest ----------
 
     @Test

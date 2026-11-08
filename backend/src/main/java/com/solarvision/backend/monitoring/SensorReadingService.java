@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration; // NEW
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -28,6 +29,9 @@ public class SensorReadingService {
 
     // For now every site uses one time zone; later this will come from the site
     private static final ZoneId SITE_ZONE = ZoneId.of("Asia/Colombo");
+
+    // NEW: how far a device clock may run ahead of the server before we reject the reading
+    private static final Duration MAX_CLOCK_SKEW = Duration.ofMinutes(5);
 
     /** Ingestion: NOT scoped (devices/simulator post readings; device auth comes later). */
     @Transactional
@@ -48,6 +52,13 @@ public class SensorReadingService {
         OffsetDateTime recordedAt = request.getRecordedAt() != null
                 ? request.getRecordedAt()
                 : OffsetDateTime.now();
+
+        // NEW: a reading cannot come from the future (small clock differences are allowed)
+        if (recordedAt.isAfter(OffsetDateTime.now().plus(MAX_CLOCK_SKEW))) {
+            throw new IllegalArgumentException(
+                    "recordedAt cannot be more than " + MAX_CLOCK_SKEW.toMinutes()
+                            + " minutes in the future");
+        }
 
         if (sensorReadingRepository.existsByEquipmentIdAndRecordedAt(equipment.getId(), recordedAt)) {
             throw new IllegalArgumentException(
