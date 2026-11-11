@@ -1,0 +1,72 @@
+# Continuous Integration: build and test backend + frontend on every push / pull request
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Least privilege: the workflow can only read the repository
+permissions:
+  contents: read
+
+# If you push again quickly, cancel the older run that is still going
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (Java 25, Maven, Testcontainers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      # -B = batch mode (clean logs), -ntp = no download progress lines
+      # verify = compile + all unit tests + the Testcontainers integration test
+      - name: Build and test
+        run: ./mvnw -B -ntp verify
+
+  frontend:
+    name: Frontend (Node 22, lint, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      # the real value lives in .env.local (not in Git); the build only needs a placeholder
+      BACKEND_URL: http://localhost:8080
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # npm ci = install exactly what package-lock.json says (reproducible)
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
