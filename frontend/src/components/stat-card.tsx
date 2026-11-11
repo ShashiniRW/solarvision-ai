@@ -1,8 +1,13 @@
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+// A small label + value tile, e.g. on the equipment page.
 export function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <p className="text-xs uppercase text-gray-500">{label}</p>
-      <p className="mt-1 text-xl font-semibold">{value}</p>
-    </div>
+    <Card size="sm">
+      <CardHeader>
+        <CardDescription className="text-xs uppercase tracking-wide">{label}</CardDescription>
+        <CardTitle className="text-xl font-semibold tabular-nums">{value}</CardTitle>
+      </CardHeader>
+    </Card>
   );
 }
