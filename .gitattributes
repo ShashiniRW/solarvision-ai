@@ -1,0 +1,20 @@
+# Line endings for the whole repository (backend + frontend + docs)
+# Git stores text files with LF; each OS gets its native endings on checkout
+* text=auto
+
+# Shell scripts must keep LF everywhere, or they fail on Linux (CI, Docker)
+*.sh   text eol=lf
+mvnw   text eol=lf
+
+# Windows scripts must keep CRLF
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+
+# Binary files: never touch them
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.jar  binary
+*.pdf  binary
