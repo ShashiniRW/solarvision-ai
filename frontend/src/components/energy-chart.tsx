@@ -22,19 +22,39 @@ function shortDate(value: string): string {
   });
 }
 
+// Theme colours (CSS variables from globals.css), so the chart follows light/dark mode
+const AXIS_TICK = { fontSize: 11, fill: "var(--muted-foreground)" };
+const BRAND_AMBER = "#f59e0b"; // amber-500, the brand colour used for bars
+
 export function EnergyChart({ data }: { data: Point[] }) {
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="date" tickFormatter={shortDate} interval={0} tick={{ fontSize: 11 }} />
-          <YAxis width={48} />
-          <Tooltip
-            labelFormatter={(label) => shortDate(String(label))}
-            formatter={(value) => `${value} kWh`}
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+          <XAxis
+            dataKey="date"
+            tickFormatter={shortDate}
+            interval={0}
+            tick={AXIS_TICK}
+            stroke="var(--border)"
           />
-          <Bar dataKey="totalEnergyKwh" name="Energy" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+          <YAxis width={48} tick={AXIS_TICK} stroke="var(--border)" />
+          <Tooltip
+            cursor={{ fill: "var(--muted)" }}
+            contentStyle={{
+              backgroundColor: "var(--popover)",
+              borderColor: "var(--border)",
+              borderRadius: 8,
+              color: "var(--popover-foreground)",
+            }}
+            labelStyle={{ color: "var(--popover-foreground)" }}
+            labelFormatter={(label) => shortDate(String(label))}
+            formatter={(value) =>
+              typeof value === "number" ? `${value.toFixed(2)} kWh` : `${value} kWh`
+            }
+          />
+          <Bar dataKey="totalEnergyKwh" name="Energy" fill={BRAND_AMBER} radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
