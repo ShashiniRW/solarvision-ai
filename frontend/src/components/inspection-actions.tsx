@@ -1,7 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { brandButtonClass, selectClass, successButtonClass } from "@/lib/styles";
 
 type Props = {
   inspectionId: number;
@@ -20,6 +25,7 @@ const RESULTS = [
 
 export function InspectionActions({ inspectionId, status, canCancel }: Props) {
   const router = useRouter();
+  const id = useId(); // unique per table row, so labels point to the right input
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
@@ -83,49 +89,58 @@ export function InspectionActions({ inspectionId, status, canCancel }: Props) {
   }
 
   if (status === "COMPLETED" || status === "CANCELLED") {
-    return <span className="text-gray-400">-</span>;
+    return <span className="text-muted-foreground">-</span>;
   }
 
   return (
     <div className="flex flex-col items-start gap-2">
       <div className="flex flex-wrap gap-2">
         {status === "SCHEDULED" && (
-          <button
+          <Button
+            type="button"
+            size="sm"
             onClick={() => send("start")}
             disabled={busy}
-            className="rounded-md bg-amber-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+            className={brandButtonClass}
           >
             Start
-          </button>
+          </Button>
         )}
         {status === "IN_PROGRESS" && (
-          <button
+          <Button
+            type="button"
+            size="sm"
+            aria-expanded={panel === "complete"}
             onClick={() => togglePanel("complete")}
             disabled={busy}
-            className="rounded-md bg-green-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+            className={successButtonClass}
           >
             Complete
-          </button>
+          </Button>
         )}
         {canCancel && (
-          <button
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            aria-expanded={panel === "cancel"}
             onClick={() => togglePanel("cancel")}
             disabled={busy}
-            className="rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
           >
             Cancel...
-          </button>
+          </Button>
         )}
       </div>
 
       {panel === "complete" && (
-        <div className="w-64 space-y-2 rounded-md border border-gray-200 bg-gray-50 p-3">
-          <label className="block text-xs font-medium text-gray-700">
-            Result
+        <div className="w-64 space-y-3 rounded-md border bg-muted/50 p-3">
+          <div className="space-y-1.5">
+            <Label htmlFor={`${id}-result`}>Result</Label>
             <select
+              id={`${id}-result`}
               value={result}
               onChange={(event) => setResult(event.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm"
+              className={selectClass}
             >
               {RESULTS.map((item) => (
                 <option key={item.value} value={item.value}>
@@ -133,50 +148,54 @@ export function InspectionActions({ inspectionId, status, canCancel }: Props) {
                 </option>
               ))}
             </select>
-          </label>
-          <label className="block text-xs font-medium text-gray-700">
-            Findings
-            <textarea
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={`${id}-findings`}>Findings</Label>
+            <Textarea
+              id={`${id}-findings`}
               value={findings}
               onChange={(event) => setFindings(event.target.value)}
               rows={3}
               maxLength={5000}
-              className="mt-1 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm"
             />
-          </label>
-          <button
+          </div>
+          <Button
+            type="button"
+            size="sm"
             onClick={submitComplete}
             disabled={busy}
-            className="rounded-md bg-green-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+            className={successButtonClass}
           >
             Save
-          </button>
+          </Button>
         </div>
       )}
 
       {panel === "cancel" && (
-        <div className="w-64 space-y-2 rounded-md border border-gray-200 bg-gray-50 p-3">
-          <label className="block text-xs font-medium text-gray-700">
-            Reason (optional)
-            <input
+        <div className="w-64 space-y-3 rounded-md border bg-muted/50 p-3">
+          <div className="space-y-1.5">
+            <Label htmlFor={`${id}-reason`}>Reason (optional)</Label>
+            <Input
+              id={`${id}-reason`}
               value={reason}
               onChange={(event) => setReason(event.target.value)}
               maxLength={1000}
-              className="mt-1 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm"
             />
-          </label>
-          <button
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="destructive"
             onClick={() => send("cancel", { reason: reason.trim() })}
             disabled={busy}
-            className="rounded-md bg-red-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
           >
             Confirm cancellation
-          </button>
+          </Button>
         </div>
       )}
 
       {error && (
-        <p role="alert" className="max-w-xs text-xs text-red-600">
+        <p role="alert" className="max-w-xs text-xs text-red-600 dark:text-red-400">
           {error}
         </p>
       )}

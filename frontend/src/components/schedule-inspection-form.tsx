@@ -1,7 +1,11 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useId, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { brandButtonClass, selectClass, successButtonClass } from "@/lib/styles";
 
 type AlertOption = { id: number; label: string };
 
@@ -19,6 +23,7 @@ export function ScheduleInspectionForm({
   alertOptions: AlertOption[];
 }) {
   const router = useRouter();
+  const id = useId(); // unique ids, so each <Label> is linked to its own input
   const [open, setOpen] = useState(false);
   const [type, setType] = useState("ROUTINE");
   const [scheduledAt, setScheduledAt] = useState("");
@@ -90,31 +95,38 @@ export function ScheduleInspectionForm({
   return (
     <div>
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="button"
+          aria-expanded={open}
           onClick={() => {
             setOpen(!open);
             setError(null);
             setSuccess(null);
           }}
-          className="rounded-md bg-amber-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600"
+          variant={open ? "outline" : "default"}
+          className={open ? undefined : brandButtonClass}
         >
           {open ? "Close" : "Schedule inspection"}
-        </button>
-        {success && <span className="text-sm text-green-700">{success}</span>}
+        </Button>
+        {success && (
+          <span role="status" className="text-sm text-green-700 dark:text-green-400">
+            {success}
+          </span>
+        )}
       </div>
 
       {open && (
         <form
           onSubmit={handleSubmit}
-          className="mt-3 grid max-w-2xl grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-white p-4 sm:grid-cols-2"
+          className="mt-3 grid max-w-2xl grid-cols-1 gap-4 rounded-xl border bg-card p-4 sm:grid-cols-2"
         >
-          <label className="block text-sm font-medium text-gray-700">
-            Type
+          <div className="space-y-1.5">
+            <Label htmlFor={`${id}-type`}>Type</Label>
             <select
+              id={`${id}-type`}
               value={type}
               onChange={(event) => setType(event.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+              className={selectClass}
             >
               {TYPES.map((item) => (
                 <option key={item.value} value={item.value}>
@@ -122,25 +134,28 @@ export function ScheduleInspectionForm({
                 </option>
               ))}
             </select>
-          </label>
+          </div>
 
-          <label className="block text-sm font-medium text-gray-700">
-            Date and time (Colombo time)
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor={`${id}-when`}>Date and time (Colombo time)</Label>
+            <Input
+              id={`${id}-when`}
               type="datetime-local"
               required
               value={scheduledAt}
               onChange={(event) => setScheduledAt(event.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
             />
-          </label>
+          </div>
 
-          <label className="block text-sm font-medium text-gray-700 sm:col-span-2">
-            Related alert {type === "ALERT_FOLLOW_UP" ? "(required)" : "(optional)"}
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor={`${id}-alert`}>
+              Related alert {type === "ALERT_FOLLOW_UP" ? "(required)" : "(optional)"}
+            </Label>
             <select
+              id={`${id}-alert`}
               value={alertId}
               onChange={(event) => setAlertId(event.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+              className={selectClass}
             >
               <option value="">None</option>
               {alertOptions.map((option) => (
@@ -149,22 +164,18 @@ export function ScheduleInspectionForm({
                 </option>
               ))}
             </select>
-          </label>
+          </div>
 
           {error && (
-            <p role="alert" className="text-sm text-red-600 sm:col-span-2">
+            <p role="alert" className="text-sm text-red-600 sm:col-span-2 dark:text-red-400">
               {error}
             </p>
           )}
 
           <div className="sm:col-span-2">
-            <button
-              type="submit"
-              disabled={busy}
-              className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
-            >
+            <Button type="submit" disabled={busy} className={successButtonClass}>
               {busy ? "Scheduling..." : "Schedule"}
-            </button>
+            </Button>
           </div>
         </form>
       )}
