@@ -1,10 +1,20 @@
 import Link from "next/link";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { EmptyState } from "@/components/empty-state";
 import { InfoGrid } from "@/components/info-grid";
 import { StatusBadge } from "@/components/status-badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { apiGet, apiGetOrNotFound } from "@/lib/api";
 import { formatDate, formatKw } from "@/lib/format";
 import { parseId } from "@/lib/params";
+import { linkClass } from "@/lib/styles";
 import type { Equipment, Site } from "@/lib/types";
 
 export default async function SiteDetailPage({
@@ -46,48 +56,48 @@ export default async function SiteDetailPage({
       </div>
 
       <h2 className="mt-8 text-lg font-semibold">Equipment</h2>
-      {equipment.length === 0 ? (
-        <p className="mt-3 rounded-lg border border-dashed border-gray-300 p-8 text-center text-gray-500">
-          No equipment is installed at this site yet.
-        </p>
-      ) : (
-        <div className="mt-3 overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
-              <tr>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Manufacturer / model</th>
-                <th className="px-4 py-3">Serial number</th>
-                <th className="px-4 py-3">QR code</th>
-                <th className="px-4 py-3">Capacity</th>
-                <th className="px-4 py-3">Warranty until</th>
-                <th className="px-4 py-3">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {equipment.map((item) => (
-                <tr key={item.id}>
-                  <td className="px-4 py-3 font-medium">
-                    <Link href={`/equipment/${item.id}`} className="text-amber-700 hover:underline">
-                      {item.equipmentType}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    {[item.manufacturer, item.model].filter(Boolean).join(" ") || "-"}
-                  </td>
-                  <td className="px-4 py-3">{item.serialNumber ?? "-"}</td>
-                  <td className="px-4 py-3">{item.qrCode}</td>
-                  <td className="px-4 py-3">{formatKw(item.capacityKw)}</td>
-                  <td className="px-4 py-3">{formatDate(item.warrantyExpiryDate)}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge value={item.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <div className="mt-3">
+        {equipment.length === 0 ? (
+          <EmptyState>No equipment is installed at this site yet.</EmptyState>
+        ) : (
+          <div className="rounded-xl border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Manufacturer / model</TableHead>
+                  <TableHead>Serial number</TableHead>
+                  <TableHead>QR code</TableHead>
+                  <TableHead>Capacity</TableHead>
+                  <TableHead>Warranty until</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {equipment.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      <Link href={`/equipment/${item.id}`} className={linkClass}>
+                        {item.equipmentType}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      {[item.manufacturer, item.model].filter(Boolean).join(" ") || "-"}
+                    </TableCell>
+                    <TableCell>{item.serialNumber ?? "-"}</TableCell>
+                    <TableCell className="font-mono text-xs">{item.qrCode}</TableCell>
+                    <TableCell className="tabular-nums">{formatKw(item.capacityKw)}</TableCell>
+                    <TableCell className="tabular-nums">{formatDate(item.warrantyExpiryDate)}</TableCell>
+                    <TableCell>
+                      <StatusBadge value={item.status} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

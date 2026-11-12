@@ -1,15 +1,25 @@
 import Link from "next/link";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { EmptyState } from "@/components/empty-state";
 import { StatusBadge } from "@/components/status-badge";
 import { SummaryCard } from "@/components/summary-card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { apiGet } from "@/lib/api";
 import { currentTimeLabel, formatDateTime } from "@/lib/format";
 import { getCurrentUser } from "@/lib/session";
+import { linkClass } from "@/lib/styles";
 import type { Alert, DashboardSummary } from "@/lib/types";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
-  
+
   // ADMIN sees every project; everyone else only the projects they belong to
   const seesAllProjects = user.roles.includes("ADMIN");
 
@@ -37,7 +47,7 @@ export default async function DashboardPage() {
 
       <div className="flex flex-wrap items-end justify-between gap-2">
         <h1 className="text-2xl font-semibold">Welcome back, {user.firstName}</h1>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted-foreground">
           Updated {currentTimeLabel()} (Colombo time) · refreshes every 30 seconds
         </p>
       </div>
@@ -74,52 +84,49 @@ export default async function DashboardPage() {
       <section className="mt-8">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Recent unresolved alerts</h2>
-          <Link href="/alerts" className="text-sm text-amber-700 hover:underline">
+          <Link href="/alerts" className={`text-sm ${linkClass}`}>
             View all alerts &rarr;
           </Link>
         </div>
 
-        {recentAlerts.length === 0 ? (
-          <p className="mt-3 rounded-lg border border-dashed border-gray-300 p-8 text-center text-gray-500">
-            No unresolved alerts. Everything looks fine.
-          </p>
-        ) : (
-          <div className="mt-3 overflow-x-auto rounded-lg border border-gray-200 bg-white">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
-                <tr>
-                  <th className="px-4 py-3">Severity</th>
-                  <th className="px-4 py-3">Equipment</th>
-                  <th className="px-4 py-3">Message</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Triggered</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {recentAlerts.map((alert) => (
-                  <tr key={alert.id}>
-                    <td className="px-4 py-3">
-                      <StatusBadge value={alert.severity} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/equipment/${alert.equipmentId}`}
-                        className="text-amber-700 hover:underline"
-                      >
-                        {alert.equipmentType} · {alert.equipmentSerialNumber ?? alert.equipmentId}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3">{alert.message}</td>
-                    <td className="px-4 py-3">
-                      <StatusBadge value={alert.status} />
-                    </td>
-                    <td className="px-4 py-3">{formatDateTime(alert.triggeredAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div className="mt-3">
+          {recentAlerts.length === 0 ? (
+            <EmptyState>No unresolved alerts. Everything looks fine.</EmptyState>
+          ) : (
+            <div className="rounded-xl border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Severity</TableHead>
+                    <TableHead>Equipment</TableHead>
+                    <TableHead>Message</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Triggered</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentAlerts.map((alert) => (
+                    <TableRow key={alert.id}>
+                      <TableCell>
+                        <StatusBadge value={alert.severity} />
+                      </TableCell>
+                      <TableCell>
+                        <Link href={`/equipment/${alert.equipmentId}`} className={linkClass}>
+                          {alert.equipmentType} · {alert.equipmentSerialNumber ?? alert.equipmentId}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="min-w-64 whitespace-normal">{alert.message}</TableCell>
+                      <TableCell>
+                        <StatusBadge value={alert.status} />
+                      </TableCell>
+                      <TableCell className="tabular-nums">{formatDateTime(alert.triggeredAt)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );
