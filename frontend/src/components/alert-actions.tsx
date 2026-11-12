@@ -49,7 +49,7 @@ export function AlertActions({ alertId, status }: { alertId: number; status: str
   }
 
   if (status === "RESOLVED") {
-    return <span className="text-gray-400">-</span>;
+    return <span className="text-muted-foreground">-</span>;
   }
 
   return (
@@ -57,14 +57,16 @@ export function AlertActions({ alertId, status }: { alertId: number; status: str
       <div className="flex gap-2">
         {status === "OPEN" && (
           <button
+            type="button"
             onClick={() => run("acknowledge")}
             disabled={busy}
-            className="rounded-md border border-amber-500 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+            className="rounded-md border border-amber-500 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-50 dark:text-amber-400 dark:hover:bg-amber-500/10"
           >
             Acknowledge
           </button>
         )}
         <button
+          type="button"
           onClick={() => run("resolve")}
           disabled={busy}
           className="rounded-md bg-green-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
@@ -73,7 +75,7 @@ export function AlertActions({ alertId, status }: { alertId: number; status: str
         </button>
       </div>
       {error && (
-        <p role="alert" className="max-w-xs text-xs text-red-600">
+        <p role="alert" className="max-w-xs text-xs text-red-600 dark:text-red-400">
           {error}
         </p>
       )}

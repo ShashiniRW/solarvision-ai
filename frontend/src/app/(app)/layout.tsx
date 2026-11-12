@@ -6,7 +6,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await getCurrentUser();
 
   return (
-    <div className="flex min-h-screen bg-gray-50 text-gray-900">
+    // theme colours: light grey / dark page background, readable text in both modes
+    <div className="flex min-h-screen bg-muted/40 text-foreground">
       <Sidebar roles={user.roles} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header user={user} />
