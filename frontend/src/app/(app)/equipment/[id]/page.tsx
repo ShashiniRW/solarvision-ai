@@ -1,11 +1,19 @@
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { canScheduleInspections } from "@/lib/permissions";
+import { EmptyState } from "@/components/empty-state";
 import { EnergyChart } from "@/components/energy-chart";
-import { getCurrentUser } from "@/lib/session";
 import { InfoGrid } from "@/components/info-grid";
 import { ScheduleInspectionForm } from "@/components/schedule-inspection-form";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { apiGet, apiGetOrNotFound, apiGetOrNull } from "@/lib/api";
 import {
   formatDate,
@@ -16,6 +24,8 @@ import {
   isoDateInColombo,
 } from "@/lib/format";
 import { parseId } from "@/lib/params";
+import { canScheduleInspections } from "@/lib/permissions";
+import { getCurrentUser } from "@/lib/session";
 import type {
   Alert,
   DailyEnergySummary,
@@ -50,7 +60,7 @@ export default async function EquipmentDetailPage({
 
   const stale = latest ? isOlderThanMinutes(latest.recordedAt, STALE_AFTER_MINUTES) : false;
   const title = [equipment.equipmentType, equipment.serialNumber].filter(Boolean).join(" · ");
-  
+
   const user = await getCurrentUser();
   const canSchedule = canScheduleInspections(user.roles);
 
@@ -102,20 +112,19 @@ export default async function EquipmentDetailPage({
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-lg font-semibold">Latest reading</h2>
           {stale && (
-            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+            <Badge
+              variant="secondary"
+              className="bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-400"
+            >
               Stale data
-            </span>
+            </Badge>
           )}
-          {latest?.isSimulated && (
-            <span className="rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-700">
-              Simulated
-            </span>
-          )}
+          {latest?.isSimulated && <Badge variant="secondary">Simulated</Badge>}
         </div>
 
         {latest ? (
           <>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               Recorded {formatDateTime(latest.recordedAt)} (Colombo time)
             </p>
             <div className="mt-3 grid grid-cols-2 gap-4 md:grid-cols-5">
@@ -127,64 +136,64 @@ export default async function EquipmentDetailPage({
             </div>
           </>
         ) : (
-          <p className="mt-3 rounded-lg border border-dashed border-gray-300 p-8 text-center text-gray-500">
-            No readings have been recorded for this equipment yet.
-          </p>
+          <div className="mt-3">
+            <EmptyState>No readings have been recorded for this equipment yet.</EmptyState>
+          </div>
         )}
       </section>
 
       {/* ---------- Daily energy chart ---------- */}
       <section className="mt-8">
         <h2 className="text-lg font-semibold">Daily energy in kWh (last {CHART_DAYS} days)</h2>
-        {summary.length === 0 ? (
-          <p className="mt-3 rounded-lg border border-dashed border-gray-300 p-8 text-center text-gray-500">
-            No energy data for this period.
-          </p>
-        ) : (
-          <div className="mt-3 rounded-lg border border-gray-200 bg-white p-4">
-            <EnergyChart data={chartData} />
-            <p className="mt-2 text-xs text-gray-500">Days without readings have no bar.</p>
-          </div>
-        )}
+        <div className="mt-3">
+          {summary.length === 0 ? (
+            <EmptyState>No energy data for this period.</EmptyState>
+          ) : (
+            <div className="rounded-xl border bg-card p-4">
+              <EnergyChart data={chartData} />
+              <p className="mt-2 text-xs text-muted-foreground">Days without readings have no bar.</p>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* ---------- Alerts ---------- */}
       <section className="mt-8">
         <h2 className="text-lg font-semibold">Alerts</h2>
-        {alerts.length === 0 ? (
-          <p className="mt-3 rounded-lg border border-dashed border-gray-300 p-8 text-center text-gray-500">
-            No alerts for this equipment.
-          </p>
-        ) : (
-          <div className="mt-3 overflow-x-auto rounded-lg border border-gray-200 bg-white">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
-                <tr>
-                  <th className="px-4 py-3">Severity</th>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Message</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Triggered</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {alerts.map((alert) => (
-                  <tr key={alert.id}>
-                    <td className="px-4 py-3">
-                      <StatusBadge value={alert.severity} />
-                    </td>
-                    <td className="px-4 py-3">{alert.alertType.replaceAll("_", " ")}</td>
-                    <td className="px-4 py-3">{alert.message}</td>
-                    <td className="px-4 py-3">
-                      <StatusBadge value={alert.status} />
-                    </td>
-                    <td className="px-4 py-3">{formatDateTime(alert.triggeredAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div className="mt-3">
+          {alerts.length === 0 ? (
+            <EmptyState>No alerts for this equipment.</EmptyState>
+          ) : (
+            <div className="rounded-xl border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Severity</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Message</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Triggered</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {alerts.map((alert) => (
+                    <TableRow key={alert.id}>
+                      <TableCell>
+                        <StatusBadge value={alert.severity} />
+                      </TableCell>
+                      <TableCell>{alert.alertType.replaceAll("_", " ")}</TableCell>
+                      <TableCell className="min-w-64 whitespace-normal">{alert.message}</TableCell>
+                      <TableCell>
+                        <StatusBadge value={alert.status} />
+                      </TableCell>
+                      <TableCell className="tabular-nums">{formatDateTime(alert.triggeredAt)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* ---------- Inspections ---------- */}
@@ -195,40 +204,44 @@ export default async function EquipmentDetailPage({
             <ScheduleInspectionForm equipmentId={equipmentId} alertOptions={alertOptions} />
           </div>
         )}
-        {inspections.length === 0 ? (
-          <p className="mt-3 rounded-lg border border-dashed border-gray-300 p-8 text-center text-gray-500">
-            No inspections for this equipment.
-          </p>
-        ) : (
-          <div className="mt-3 overflow-x-auto rounded-lg border border-gray-200 bg-white">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
-                <tr>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Scheduled</th>
-                  <th className="px-4 py-3">Result</th>
-                  <th className="px-4 py-3">Findings</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {inspections.map((inspection) => (
-                  <tr key={inspection.id}>
-                    <td className="px-4 py-3">{inspection.inspectionType.replaceAll("_", " ")}</td>
-                    <td className="px-4 py-3">
-                      <StatusBadge value={inspection.status} />
-                    </td>
-                    <td className="px-4 py-3">{formatDateTime(inspection.scheduledAt)}</td>
-                    <td className="px-4 py-3">
-                      {inspection.result ? <StatusBadge value={inspection.result} /> : "-"}
-                    </td>
-                    <td className="px-4 py-3">{inspection.findings ?? "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div className="mt-3">
+          {inspections.length === 0 ? (
+            <EmptyState>No inspections for this equipment.</EmptyState>
+          ) : (
+            <div className="rounded-xl border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Scheduled</TableHead>
+                    <TableHead>Result</TableHead>
+                    <TableHead>Findings</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {inspections.map((inspection) => (
+                    <TableRow key={inspection.id}>
+                      <TableCell>{inspection.inspectionType.replaceAll("_", " ")}</TableCell>
+                      <TableCell>
+                        <StatusBadge value={inspection.status} />
+                      </TableCell>
+                      <TableCell className="tabular-nums">
+                        {formatDateTime(inspection.scheduledAt)}
+                      </TableCell>
+                      <TableCell>
+                        {inspection.result ? <StatusBadge value={inspection.result} /> : "-"}
+                      </TableCell>
+                      <TableCell className="min-w-48 whitespace-normal">
+                        {inspection.findings ?? "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );
