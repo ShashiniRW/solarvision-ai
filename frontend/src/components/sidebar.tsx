@@ -12,9 +12,11 @@ export function Sidebar({ roles }: { roles: string[] }) {
   );
 
   return (
-    <aside className="hidden w-60 shrink-0 border-r border-gray-200 bg-white md:block">
-      <div className="px-6 py-5 text-lg font-semibold text-amber-600">SolarVision AI</div>
-      <nav className="px-3">
+    <aside className="hidden w-60 shrink-0 border-r bg-card md:block">
+      <div className="px-6 py-5 text-lg font-semibold text-amber-600 dark:text-amber-500">
+        SolarVision AI
+      </div>
+      <nav aria-label="Main" className="px-3">
         <ul className="space-y-1">
           {items.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -22,8 +24,11 @@ export function Sidebar({ roles }: { roles: string[] }) {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`block rounded-md px-3 py-2 text-sm font-medium ${
-                    active ? "bg-amber-50 text-amber-700" : "text-gray-700 hover:bg-gray-100"
+                  aria-current={active ? "page" : undefined}
+                  className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    active
+                      ? "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   {item.label}
