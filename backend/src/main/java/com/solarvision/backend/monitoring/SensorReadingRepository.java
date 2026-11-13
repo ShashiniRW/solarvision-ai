@@ -24,7 +24,7 @@ public interface SensorReadingRepository extends JpaRepository<SensorReading, Lo
 
     @Query(value = """
             SELECT to_char(CAST(recorded_at AT TIME ZONE :zone AS date), 'YYYY-MM-DD') AS "day",
-                   COALESCE(SUM(energy_kwh), 0)            AS "totalEnergyKwh",
+                   SUM(energy_kwh)                         AS "totalEnergyKwh", -- NULL when no reading that day has an energy value (unknown, not 0)
                    MAX(power_kw)                           AS "peakPowerKw",
                    ROUND(AVG(temperature_c), 2)            AS "avgTemperatureC",
                    COUNT(*)                                AS "readingCount"

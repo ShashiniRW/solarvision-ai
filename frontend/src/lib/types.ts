@@ -58,7 +58,7 @@ export type SensorReading = {
 
 export type DailyEnergySummary = {
   date: string;
-  totalEnergyKwh: number;
+  totalEnergyKwh: number | null; // null = readings exist, but none had an energy value
   peakPowerKw: number | null;
   avgTemperatureC: number | null;
   readingCount: number;
