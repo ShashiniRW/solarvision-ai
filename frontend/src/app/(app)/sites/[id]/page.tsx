@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { EmptyState } from "@/components/empty-state";
+import { ForecastCard, ForecastCardSkeleton } from "@/components/forecast-card";
 import { InfoGrid } from "@/components/info-grid";
 import { StatusBadge } from "@/components/status-badge";
 import {
@@ -53,6 +55,13 @@ export default async function SiteDetailPage({
             },
           ]}
         />
+      </div>
+
+      {/* The forecast streams in on its own: the rest of the page never waits for the weather */}
+      <div className="mt-8">
+        <Suspense fallback={<ForecastCardSkeleton />}>
+          <ForecastCard siteId={site.id} equipmentIds={equipment.map((item) => item.id)} />
+        </Suspense>
       </div>
 
       <h2 className="mt-8 text-lg font-semibold">Equipment</h2>

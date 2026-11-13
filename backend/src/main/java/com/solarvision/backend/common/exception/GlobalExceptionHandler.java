@@ -1,5 +1,7 @@
 package com.solarvision.backend.common.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,8 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     // ---------- 400 Bad Request: the request itself is wrong ----------
 
@@ -82,6 +86,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrity(DataIntegrityViolationException ex) {
         return error(HttpStatus.CONFLICT, "The request conflicts with existing data");
+    }
+
+    // ---------- 503 Service Unavailable: an outside service we depend on failed ----------
+
+    // The weather provider is down, too slow, or returned unusable data.
+    // The technical cause goes to the server log; the user gets a short, safe message.
+    @ExceptionHandler(WeatherUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleWeatherUnavailable(WeatherUnavailableException ex) {
+        log.warn("Weather provider problem: {}", ex.getMessage(), ex.getCause());
+        return error(HttpStatus.SERVICE_UNAVAILABLE, "Weather data is temporarily unavailable. Please try again later.");
     }
 
     // ---------- helper: one consistent error shape for every response ----------

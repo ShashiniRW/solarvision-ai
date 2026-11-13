@@ -110,3 +110,21 @@ export type DashboardSummary = {
   equipmentFaulty: number;
   energyTodayKwh: number;
 };
+
+export type ForecastDay = {
+  date: string;
+  weatherCode: number | null;
+  temperatureMaxC: number | null;
+  temperatureMinC: number | null;
+  precipitationProbabilityPercent: number | null;
+  sunHours: number | null;
+  expectedEnergyKwh: number | null;
+};
+
+export type SiteForecast = {
+  siteId: number;
+  capacityKw: number | null;
+  performanceRatio: number;
+  attribution: string;
+  days: ForecastDay[];
+};
