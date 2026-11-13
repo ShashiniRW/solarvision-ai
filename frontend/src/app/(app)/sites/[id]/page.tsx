@@ -60,7 +60,7 @@ export default async function SiteDetailPage({
       {/* The forecast streams in on its own: the rest of the page never waits for the weather */}
       <div className="mt-8">
         <Suspense fallback={<ForecastCardSkeleton />}>
-          <ForecastCard siteId={site.id} />
+          <ForecastCard siteId={site.id} equipmentIds={equipment.map((item) => item.id)} />
         </Suspense>
       </div>
 
