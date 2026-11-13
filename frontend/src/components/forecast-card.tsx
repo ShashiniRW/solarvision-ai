@@ -46,6 +46,9 @@ async function loadActualEnergy(
     const totals = new Map<string, number>();
     for (const list of summaries) {
       for (const day of list) {
+        if (day.totalEnergyKwh === null) {
+          continue; // unknown energy: leave the day out instead of counting it as 0
+        }
         totals.set(day.date, (totals.get(day.date) ?? 0) + day.totalEnergyKwh);
       }
     }
