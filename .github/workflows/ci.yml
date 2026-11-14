@@ -1,4 +1,4 @@
-# Continuous Integration: build and test backend + frontend on every push / pull request
+# Continuous Integration: build and test backend, frontend and AI service on every push / pull request
 name: CI
 
 on:
@@ -70,3 +70,34 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  ai-service:
+    name: AI service (Python 3.14, uv, Ruff, pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ai-service
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v5
+
+      # uv reads .python-version and installs Python 3.14 itself
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: ai-service/uv.lock
+
+      # --locked = install exactly what uv.lock says; fail if uv.lock is out of date
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      - name: Test
+        run: uv run pytest
