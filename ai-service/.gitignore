@@ -1,0 +1,9 @@
+# Python virtual environment and caches (never commit)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Real secrets (never commit). .env.example is the template that IS committed.
+.env

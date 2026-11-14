@@ -1,0 +1,35 @@
+[project]
+name = "solarvision-ai-service"
+version = "0.1.0"
+description = "Anomaly detection and AI assistant for SolarVision AI (called only by the backend)"
+readme = "README.md"
+authors = [
+    { name = "ShashiniRW" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard]>=0.162.7",
+    "pydantic-settings>=2.16.3",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.8,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+src = ["src"]
+
+[tool.ruff.lint]
+# E/F: errors, I: import order, UP: modern Python, B: common bugs
+select = ["E", "F", "I", "UP", "B"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "ruff>=0.17.5",
+]
