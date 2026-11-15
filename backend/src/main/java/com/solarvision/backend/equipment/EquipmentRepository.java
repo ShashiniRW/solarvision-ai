@@ -54,4 +54,11 @@ public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
             "AND e.site.project.id IN :projectIds")
     long countByStatusInProjects(@Param("status") String status,
                                  @Param("projectIds") Collection<Long> projectIds);
+
+    // every piece of equipment whose energy can be compared with the forecast
+    // NOT scoped: used by the internal anomaly detection job
+    @Query("SELECT e FROM Equipment e JOIN FETCH e.site s "
+        + "WHERE e.capacityKw IS NOT NULL "
+        + "AND s.latitude IS NOT NULL AND s.longitude IS NOT NULL")
+    List<Equipment> findAllForPerformanceAnalysis();
 }

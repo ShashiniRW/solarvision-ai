@@ -59,6 +59,24 @@ public class AlertService {
         return created;
     }
 
+    /**
+     * Raises an OPEN alert unless an unresolved alert of this type already exists
+     * for the equipment. NOT scoped: used by internal jobs (e.g. anomaly detection).
+     *
+     * @return true if a NEW alert was created
+     */
+    @Transactional
+    public boolean raiseIfNoActiveAlert(Long equipmentId, AlertType type,
+                                        AlertSeverity severity, String message) {
+        int inserted = alertRepository.insertWithoutReadingIfNoActiveAlert(
+            equipmentId, type.name(), severity.name(), message, OffsetDateTime.now());
+
+        if (inserted > 0) {
+            log.warn("Alert raised: {} {} on equipment {} - {}", severity, type, equipmentId, message);
+        }
+        return inserted > 0;
+    }
+
     @Transactional(readOnly = true)
     public List<Alert> search(AlertStatus status, Long equipmentId, int page, int size) {
         int safePage = Math.max(page, 0);

@@ -12,6 +12,8 @@ import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -70,6 +72,24 @@ public class SiteForecastService {
             .toList();
 
         return new SiteForecastResponse(site.getId(), site.getCapacityKw(), performanceRatio, ATTRIBUTION, days);
+    }
+
+    /**
+     * Sun hours (kWh/m²) per day for a location, from the same 30-minute cache.
+     * NOT access-checked: only for internal jobs, never for user requests.
+     */
+    public Map<LocalDate, Double> sunHoursByDate(BigDecimal latitude, BigDecimal longitude) {
+        Map<LocalDate, Double> result = new HashMap<>();
+        for (DailyWeather day : weatherFor(latitude, longitude)) {
+            if (day.radiationKwhPerM2() != null) {
+                result.put(day.date(), day.radiationKwhPerM2());
+            }
+        }
+        return result;
+    }
+
+    public BigDecimal performanceRatio() {
+        return performanceRatio;
     }
 
     private List<DailyWeather> weatherFor(BigDecimal latitude, BigDecimal longitude) {

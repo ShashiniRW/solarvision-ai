@@ -40,6 +40,22 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
                               @Param("message") String message,
                               @Param("triggeredAt") OffsetDateTime triggeredAt);
 
+    /** Same as insertIfNoActiveAlert, for alerts that are not caused by a single reading. */
+    @Modifying
+    @Query(value = """
+            INSERT INTO alerts (equipment_id, alert_type, severity, status,
+                                message, triggered_at, created_at, updated_at)
+            VALUES (:equipmentId, :alertType, :severity, 'OPEN',
+                    :message, :triggeredAt, NOW(), NOW())
+            ON CONFLICT (equipment_id, alert_type) WHERE status <> 'RESOLVED'
+            DO NOTHING
+            """, nativeQuery = true)
+    int insertWithoutReadingIfNoActiveAlert(@Param("equipmentId") Long equipmentId,
+                                            @Param("alertType") String alertType,
+                                            @Param("severity") String severity,
+                                            @Param("message") String message,
+                                            @Param("triggeredAt") OffsetDateTime triggeredAt);
+
     // ---- read queries (the equipment is loaded together with the alert) ----
 
     @EntityGraph(attributePaths = "equipment")

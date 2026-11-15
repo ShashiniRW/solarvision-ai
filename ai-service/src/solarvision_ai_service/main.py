@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, FastAPI
 
+from solarvision_ai_service.performance import analyse_performance
+from solarvision_ai_service.schemas import PerformanceReport, PerformanceRequest
 from solarvision_ai_service.security import require_internal_api_key
 
 app = FastAPI(
@@ -25,6 +27,12 @@ v1 = APIRouter(prefix="/v1", dependencies=[Depends(require_internal_api_key)])
 def ping() -> dict[str, str]:
     """Lets the backend check that its key works."""
     return {"message": "pong"}
+
+
+@v1.post("/anomalies/performance", tags=["anomalies"])
+def detect_performance_anomalies(request: PerformanceRequest) -> PerformanceReport:
+    """Finds days where actual energy is far below expected energy."""
+    return analyse_performance(request.days)
 
 
 app.include_router(v1)
