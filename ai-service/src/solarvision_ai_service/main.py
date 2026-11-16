@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, FastAPI
 
+from solarvision_ai_service.assistant import AssistantDep
+from solarvision_ai_service.assistant_schemas import ChatRequest, ChatResponse
 from solarvision_ai_service.performance import analyse_performance
 from solarvision_ai_service.schemas import PerformanceReport, PerformanceRequest
 from solarvision_ai_service.security import require_internal_api_key
@@ -33,6 +35,12 @@ def ping() -> dict[str, str]:
 def detect_performance_anomalies(request: PerformanceRequest) -> PerformanceReport:
     """Finds days where actual energy is far below expected energy."""
     return analyse_performance(request.days)
+
+
+@v1.post("/assistant/chat", tags=["assistant"])
+def chat(request: ChatRequest, assistant: AssistantDep) -> ChatResponse:
+    """Answers a question about solar maintenance or SolarVision, using the earlier turns."""
+    return assistant.chat(request)
 
 
 app.include_router(v1)
