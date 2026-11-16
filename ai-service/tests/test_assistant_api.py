@@ -2,9 +2,15 @@ from types import SimpleNamespace
 
 import pytest
 
-from solarvision_ai_service.assistant import FALLBACK_REPLY, Assistant, get_assistant
+from solarvision_ai_service.assistant import (
+    FALLBACK_REPLY,
+    Assistant,
+    build_prompt,
+    get_assistant,
+)
 from solarvision_ai_service.assistant_schemas import ChatRequest, ChatResponse
 from solarvision_ai_service.config import Settings, get_settings
+from solarvision_ai_service.knowledge import Chunk, SearchHit
 from solarvision_ai_service.main import app
 
 HEADERS = {"X-Internal-Api-Key": "test-key"}  # same key as API_KEY in conftest.py
@@ -36,7 +42,7 @@ def test_chat_returns_the_reply_and_passes_history(client, fake_assistant):
     response = client.post(URL, headers=HEADERS, json=body)
 
     assert response.status_code == 200
-    assert response.json() == {"reply": "Clean the panels.", "model": "fake-model"}
+    assert response.json() == {"reply": "Clean the panels.", "model": "fake-model", "sources": []}
     assert len(fake_assistant.requests[0].history) == 2
 
 
@@ -80,9 +86,27 @@ class FakeModels:
         return SimpleNamespace(text=self.text)
 
 
-def make_assistant(text: str | None) -> tuple[Assistant, FakeModels]:
+class FakeKnowledgeBase:
+    def __init__(self, hits: list[SearchHit] | None = None, error: Exception | None = None):
+        self.hits = hits or []
+        self.error = error
+
+    def search(self, question: str, limit: int = 4) -> list[SearchHit]:
+        if self.error:
+            raise self.error
+        return self.hits[:limit]
+
+
+def make_assistant(text: str | None, knowledge_base=None) -> tuple[Assistant, FakeModels]:
     models = FakeModels(text)
-    return Assistant(SimpleNamespace(models=models), "test-model"), models
+    assistant = Assistant(
+        SimpleNamespace(models=models), "test-model", knowledge_base=knowledge_base
+    )
+    return assistant, models
+
+
+def hit(title: str, score: float) -> SearchHit:
+    return SearchHit(Chunk("guide.md", "Guide", title, f"Text about {title}."), score)
 
 
 def test_assistant_sends_history_then_the_new_question():
@@ -104,3 +128,40 @@ def test_assistant_sends_history_then_the_new_question():
 def test_empty_gemini_answer_uses_the_fallback_reply():
     assistant, _ = make_assistant(None)
     assert assistant.chat(ChatRequest(message="Hi")).reply == FALLBACK_REPLY
+
+
+def test_relevant_sections_are_given_to_gemini_and_returned_as_sources():
+    knowledge_base = FakeKnowledgeBase([hit("Cooling", 0.82), hit("Unrelated", 0.41)])
+    assistant, models = make_assistant("Check the fans [1].", knowledge_base)
+
+    response = assistant.chat(ChatRequest(message="Inverter too hot?"))
+
+    prompt = models.calls[0]["contents"][-1].parts[0].text
+    assert "[1] Guide - Cooling" in prompt
+    assert "Unrelated" not in prompt  # below the 0.6 minimum score
+    assert prompt.endswith("Question: Inverter too hot?")
+    assert [source.title for source in response.sources] == ["Cooling"]
+
+
+def test_still_answers_when_the_knowledge_search_fails():
+    knowledge_base = FakeKnowledgeBase(error=ConnectionError("Qdrant is down"))
+    assistant, models = make_assistant("General answer", knowledge_base)
+
+    response = assistant.chat(ChatRequest(message="Inverter too hot?"))
+
+    assert models.calls[0]["contents"][-1].parts[0].text == "Inverter too hot?"
+    assert response.reply == "General answer"
+    assert response.sources == []
+
+
+def test_build_prompt_without_sections_is_just_the_question():
+    assert build_prompt("Hi", []) == "Hi"
+
+
+def test_only_sections_cited_in_the_reply_are_returned_as_sources():
+    knowledge_base = FakeKnowledgeBase([hit("Cooling", 0.82), hit("Cleaning", 0.75)])
+    assistant, _ = make_assistant("Clean the modules gently [2].", knowledge_base)
+
+    response = assistant.chat(ChatRequest(message="How do I clean panels?"))
+
+    assert [source.title for source in response.sources] == ["Cleaning"]

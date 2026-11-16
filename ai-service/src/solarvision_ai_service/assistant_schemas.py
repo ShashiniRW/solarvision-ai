@@ -26,6 +26,14 @@ class ChatRequest(CamelModel):
     history: list[ChatMessage] = Field(default_factory=list, max_length=20)
 
 
+class Source(CamelModel):
+    """A guide section the answer was based on, shown under the answer in the chat."""
+
+    document: str
+    title: str
+
+
 class ChatResponse(CamelModel):
     reply: str
     model: str
+    sources: list[Source] = Field(default_factory=list)

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,6 +18,17 @@ class Settings(BaseSettings):
     # SecretStr hides the value in logs and error messages (it prints as '**********').
     gemini_api_key: SecretStr | None = None
     gemini_model: str = "gemini-4-hydrogen"
+
+    # Knowledge base for the assistant (RAG)
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_api_key: SecretStr | None = None  # only needed for a hosted Qdrant later
+    knowledge_collection: str = "solarvision_knowledge"
+    knowledge_dir: Path = Path("knowledge")
+    embedding_model: str = "gemini-embedding-2"
+    embedding_dimensions: int = 768
+
+    rag_top_k: int = 4  # how many guide sections are given to Gemini
+    rag_min_score: float = 0.6  # sections less similar than this are ignored
 
 
 @lru_cache
