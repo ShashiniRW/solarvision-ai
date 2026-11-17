@@ -72,3 +72,22 @@ uv run python -m solarvision_ai_service.knowledge
   sources. If every model is busy, the backend returns a clear 503.
 - **Privacy:** on the Gemini free tier, Google may use requests to improve its products,
   so only demo data is sent. Real customer data would require the paid tier.
+
+### Evaluation
+
+`evaluation/questions.json` holds 11 questions with known answers: 10 about the guides
+and 1 off-topic question that must be declined. For each answer, the script checks the
+key facts, the cited guide section, and the response time. It stops early if Qdrant is
+not ready, so the numbers are never measured without the knowledge base.
+
+```powershell
+uv run python -m solarvision_ai_service.evaluation
+```
+
+Result on 17 Nov 2026 (free tier, `low` thinking): **11/11 correct**, 13.4 s average
+(about 4 s at quieter times). The fallback model answered once, when the primary model
+returned 503.
+
+An earlier run started before Qdrant was ready: without the guides, the 5 questions about
+SolarVision facts failed and the general solar questions passed. Retrieval is what makes
+the app-specific answers correct, and without it the assistant does not invent facts.
