@@ -128,3 +128,20 @@ export type SiteForecast = {
   attribution: string;
   days: ForecastDay[];
 };
+
+// ---------- AI assistant ----------
+
+// "model" is the assistant (the name Gemini uses for it)
+export type ChatRole = "user" | "model";
+
+// A guide section an answer is based on
+export type ChatSource = {
+  document: string;
+  title: string;
+};
+
+export type ChatReply = {
+  reply: string;
+  model: string;
+  sources: ChatSource[];
+};

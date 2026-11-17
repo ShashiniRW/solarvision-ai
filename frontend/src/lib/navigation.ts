@@ -11,4 +11,6 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Projects", href: "/projects" },
   { label: "Alerts", href: "/alerts" },
   { label: "Inspections", href: "/inspections" },
+  // no roles: every signed-in user may use the assistant (same rule as the backend)
+  { label: "AI Assistant", href: "/assistant" },
 ];
