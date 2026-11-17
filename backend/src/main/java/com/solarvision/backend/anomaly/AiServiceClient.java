@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.List;
 
 /** Calls the internal Python AI service, with timeouts and the shared key. */
@@ -20,7 +21,7 @@ public class AiServiceClient {
 
     @Autowired
     public AiServiceClient(AiServiceProperties properties) {
-        this(buildRestClient(properties), !properties.internalApiKey().isBlank());
+        this(buildRestClient(properties, properties.readTimeout()), !properties.internalApiKey().isBlank());
     }
 
     // used by tests
@@ -29,7 +30,8 @@ public class AiServiceClient {
         this.configured = configured;
     }
 
-    private static RestClient buildRestClient(AiServiceProperties properties) {
+    /** Shared by every client of the AI service; each one chooses how long to wait for an answer. */
+    public static RestClient buildRestClient(AiServiceProperties properties, Duration readTimeout) {
         // HTTP/1.1 on purpose: on plain http://, Java would first try an HTTP/2 "upgrade",
         // which Uvicorn (the Python server) does not support, and the request body gets lost
         HttpClient httpClient = HttpClient.newBuilder()
@@ -37,7 +39,7 @@ public class AiServiceClient {
             .connectTimeout(properties.connectTimeout())
             .build();
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
-        requestFactory.setReadTimeout(properties.readTimeout());
+        requestFactory.setReadTimeout(readTimeout);
 
         return RestClient.builder()
             .baseUrl(properties.baseUrl())
