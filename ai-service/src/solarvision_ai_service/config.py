@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,7 +18,13 @@ class Settings(BaseSettings):
     # Optional: without a Gemini key the service still runs; only the assistant returns 503.
     # SecretStr hides the value in logs and error messages (it prints as '**********').
     gemini_api_key: SecretStr | None = None
-    gemini_model: str = "gemini-4-hydrogen"
+    # Tried in order: if one is busy (429), overloaded (503) or too slow (504), the next
+    # answers. Each has 500 free requests per day, so together about 1,000 per day.
+    gemini_models: str = "gemini-3.5-flash-lite,gemini-3.1-flash-lite"
+    # How long Gemini "thinks" before answering. "low" is fast and enough for answers
+    # grounded in our guides; compare levels with the evaluation before changing it.
+    # An invalid value in .env stops the service at startup with a clear error.
+    gemini_thinking_level: Literal["minimal", "low", "medium", "high"] = "low"
 
     # Knowledge base for the assistant (RAG)
     qdrant_url: str = "http://localhost:6333"
@@ -26,9 +33,13 @@ class Settings(BaseSettings):
     knowledge_dir: Path = Path("knowledge")
     embedding_model: str = "gemini-embedding-2"
     embedding_dimensions: int = 768
-
     rag_top_k: int = 4  # how many guide sections are given to Gemini
     rag_min_score: float = 0.6  # sections less similar than this are ignored
+
+    @property
+    def gemini_model_list(self) -> list[str]:
+        """GEMINI_MODELS as a list: "a, b" -> ["a", "b"]."""
+        return [name.strip() for name in self.gemini_models.split(",") if name.strip()]
 
 
 @lru_cache

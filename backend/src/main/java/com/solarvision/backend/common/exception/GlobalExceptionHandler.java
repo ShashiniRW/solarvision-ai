@@ -98,6 +98,17 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.SERVICE_UNAVAILABLE, "Weather data is temporarily unavailable. Please try again later.");
     }
 
+    // The AI assistant could not answer (AI service down, too slow, busy, or not configured).
+    // This is an expected outside problem, so one log line is enough (no stack trace);
+    // the user gets a short, safe message.
+    @ExceptionHandler(AssistantUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleAssistantUnavailable(AssistantUnavailableException ex) {
+        String cause = ex.getCause() == null ? "-" : ex.getCause().getMessage();
+        log.warn("AI assistant problem: {} (cause: {})", ex.getMessage(), cause);
+        return error(HttpStatus.SERVICE_UNAVAILABLE,
+            "The AI assistant is temporarily unavailable. Please try again in a minute.");
+    }
+
     // ---------- helper: one consistent error shape for every response ----------
 
     private ResponseEntity<Map<String, Object>> error(HttpStatus status, String message) {

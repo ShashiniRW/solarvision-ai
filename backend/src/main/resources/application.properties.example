@@ -35,3 +35,6 @@ app.cors.allowed-origins=http://localhost:3000
 app.ai.base-url=http://localhost:8000
 # must be the SAME value as INTERNAL_API_KEY in ai-service/.env
 app.ai.internal-api-key=<paste the key from ai-service/.env>
+
+# Chat answers can take 5-15 s; this is how long the backend waits (default 45s)
+# app.ai.chat-read-timeout=45s
