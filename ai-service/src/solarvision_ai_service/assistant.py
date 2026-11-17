@@ -145,7 +145,7 @@ class Assistant:
 
 
 @lru_cache
-def _build_assistant(api_key: str) -> Assistant:
+def build_assistant(api_key: str) -> Assistant:
     """Built once: the Gemini and Qdrant clients reuse their connections."""
     settings = get_settings()
     client = genai.Client(
@@ -167,7 +167,7 @@ def get_assistant(settings: Annotated[Settings, Depends(get_settings)]) -> Assis
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE, "The AI assistant is not configured."
         )
-    return _build_assistant(key)
+    return build_assistant(key)
 
 
 # Shortcut for endpoints: "give me the assistant" (FastAPI's recommended style)

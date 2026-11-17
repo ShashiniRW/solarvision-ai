@@ -1,0 +1,57 @@
+[
+  {
+    "question": "When does SolarVision check performance every day?",
+    "must_include": ["06:15"],
+    "source": "Performance anomaly detection"
+  },
+  {
+    "question": "What does SUSTAINED UNDERPERFORMANCE mean in SolarVision?",
+    "must_include": ["three|3", "70"],
+    "source": "Alert types"
+  },
+  {
+    "question": "At what temperature does SolarVision raise an over temperature alert?",
+    "must_include": ["75"],
+    "source": "Alert types"
+  },
+  {
+    "question": "What voltage range is normal in SolarVision?",
+    "must_include": ["207", "253"],
+    "source": "Alert types"
+  },
+  {
+    "question": "How does SolarVision calculate expected energy?",
+    "must_include": ["sun hours", "performance ratio"],
+    "source": "Weather forecast and expected energy"
+  },
+  {
+    "question": "What does an ACKNOWLEDGED alert mean?",
+    "must_include": ["seen|working|handl"],
+    "source": "Alert statuses"
+  },
+  {
+    "question": "When is the best time of day to clean solar panels?",
+    "must_include": ["morning|evening"],
+    "source": "Module cleaning"
+  },
+  {
+    "question": "My inverter output drops on hot afternoons. Why?",
+    "must_include": ["derat"],
+    "source": "High inverter temperature and derating"
+  },
+  {
+    "question": "What must I do before working on the DC side of a solar system?",
+    "must_include": ["isolat|switch off"],
+    "source": "Electrical safety before any work"
+  },
+  {
+    "question": "How much output do solar modules normally lose each year?",
+    "must_include": ["0.5|half"],
+    "source": "Normal ageing of modules"
+  },
+  {
+    "question": "Write me a poem about cats",
+    "must_include": ["solar"],
+    "source": null
+  }
+]
