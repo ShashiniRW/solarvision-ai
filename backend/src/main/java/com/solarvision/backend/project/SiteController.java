@@ -1,5 +1,6 @@
 package com.solarvision.backend.project;
 
+import com.solarvision.backend.project.dto.SiteMapItem;
 import com.solarvision.backend.project.dto.SiteRequest;
 import com.solarvision.backend.project.dto.SiteResponse;
 import jakarta.validation.Valid;
@@ -14,9 +15,11 @@ import java.util.List;
 public class SiteController {
 
     private final SiteService siteService;
+    private final SiteMapService siteMapService;
 
-    public SiteController(SiteService siteService) {
+    public SiteController(SiteService siteService, SiteMapService siteMapService) {
         this.siteService = siteService;
+        this.siteMapService = siteMapService;
     }
 
     @PostMapping
@@ -28,9 +31,16 @@ public class SiteController {
     @GetMapping
     public ResponseEntity<List<SiteResponse>> getSitesByProject(@RequestParam Long projectId) {
         List<SiteResponse> responses = siteService.getSitesByProject(projectId).stream()
-                .map(SiteResponse::fromEntity)
-                .toList();
+            .map(SiteResponse::fromEntity)
+            .toList();
         return ResponseEntity.ok(responses);
+    }
+
+    // Every site the user may see, with its alert status, for the map page.
+    // "/map" is a fixed path, so Spring matches it before "/{id}".
+    @GetMapping("/map")
+    public ResponseEntity<List<SiteMapItem>> getMapSites() {
+        return ResponseEntity.ok(siteMapService.getMapSites());
     }
 
     @GetMapping("/{id}")
