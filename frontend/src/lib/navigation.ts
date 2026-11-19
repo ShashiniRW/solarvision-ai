@@ -9,6 +9,7 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Projects", href: "/projects" },
+  { label: "Map", href: "/map" },
   { label: "Alerts", href: "/alerts" },
   { label: "Inspections", href: "/inspections" },
   // no roles: every signed-in user may use the assistant (same rule as the backend)

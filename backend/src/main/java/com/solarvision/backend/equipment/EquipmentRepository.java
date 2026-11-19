@@ -61,4 +61,11 @@ public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
         + "WHERE e.capacityKw IS NOT NULL "
         + "AND s.latitude IS NOT NULL AND s.longitude IS NOT NULL")
     List<Equipment> findAllForPerformanceAnalysis();
+
+
+    // ---- map: number of pieces of equipment per site, in one query ----
+    @Query("SELECT new com.solarvision.backend.equipment.SiteEquipmentCount(e.site.id, COUNT(e)) " +
+        "FROM Equipment e " +
+        "GROUP BY e.site.id")
+    List<SiteEquipmentCount> countBySite();
 }

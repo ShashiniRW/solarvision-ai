@@ -145,3 +145,23 @@ export type ChatReply = {
   model: string;
   sources: ChatSource[];
 };
+
+// ---------- Site map ----------
+
+// The worst unresolved alert decides a site's colour on the map
+export type SiteHealth = "OK" | "WARNING" | "CRITICAL";
+
+export type MapSite = {
+  id: number;
+  name: string;
+  projectId: number;
+  projectName: string;
+  // null when the site has no coordinates yet
+  latitude: number | null;
+  longitude: number | null;
+  capacityKw: number | null;
+  equipmentCount: number;
+  criticalAlerts: number;
+  warningAlerts: number;
+  health: SiteHealth;
+};
