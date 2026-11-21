@@ -5,6 +5,7 @@ import com.solarvision.backend.access.ProjectScope;
 import com.solarvision.backend.common.exception.ConflictException;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.monitoring.SensorReading;
+import com.solarvision.backend.realtime.LiveEventPublisher;
 import com.solarvision.backend.user.User;
 import com.solarvision.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class AlertService {
     private final AlertRepository alertRepository;
     private final UserRepository userRepository;
     private final AccessService accessService;
+    private final LiveEventPublisher liveEvents;
 
     /**
      * Runs the alert rules against a saved reading and raises an alert for every
@@ -42,18 +44,21 @@ public class AlertService {
 
         for (AlertCandidate candidate : ruleEvaluator.evaluate(reading)) {
             int inserted = alertRepository.insertIfNoActiveAlert(
-                    reading.getEquipment().getId(),
-                    reading.getId(),
-                    candidate.type().name(),
-                    candidate.severity().name(),
-                    candidate.message(),
-                    reading.getRecordedAt());
+                reading.getEquipment().getId(),
+                reading.getId(),
+                candidate.type().name(),
+                candidate.severity().name(),
+                candidate.message(),
+                reading.getRecordedAt());
 
             if (inserted > 0) {
                 created++;
                 log.warn("Alert raised: {} {} on equipment {} - {}",
-                        candidate.severity(), candidate.type(),
-                        reading.getEquipment().getId(), candidate.message());
+                    candidate.severity(), candidate.type(),
+                    reading.getEquipment().getId(), candidate.message());
+                // browsers hear about it only after this transaction commits
+                liveEvents.alertCreated(reading.getEquipment().getId(),
+                    candidate.severity(), candidate.message());
             }
         }
         return created;
@@ -73,6 +78,7 @@ public class AlertService {
 
         if (inserted > 0) {
             log.warn("Alert raised: {} {} on equipment {} - {}", severity, type, equipmentId, message);
+            liveEvents.alertCreated(equipmentId, severity, message);
         }
         return inserted > 0;
     }
@@ -87,8 +93,8 @@ public class AlertService {
         if (equipmentId != null) {
             accessService.requireEquipmentAccess(equipmentId);
             return status != null
-                    ? alertRepository.findByStatusAndEquipmentIdOrderByTriggeredAtDesc(status, equipmentId, pageable)
-                    : alertRepository.findByEquipmentIdOrderByTriggeredAtDesc(equipmentId, pageable);
+                ? alertRepository.findByStatusAndEquipmentIdOrderByTriggeredAtDesc(status, equipmentId, pageable)
+                : alertRepository.findByEquipmentIdOrderByTriggeredAtDesc(equipmentId, pageable);
         }
 
         ProjectScope scope = accessService.currentScope();
@@ -96,8 +102,8 @@ public class AlertService {
         // 2. ADMIN: everything
         if (scope.unrestricted()) {
             return status != null
-                    ? alertRepository.findByStatusOrderByTriggeredAtDesc(status, pageable)
-                    : alertRepository.findAllByOrderByTriggeredAtDesc(pageable);
+                ? alertRepository.findByStatusOrderByTriggeredAtDesc(status, pageable)
+                : alertRepository.findAllByOrderByTriggeredAtDesc(pageable);
         }
 
         // 3. a user with no projects sees nothing (no database call needed)
@@ -107,8 +113,8 @@ public class AlertService {
 
         // 4. everyone else: the database filters by the user's projects
         return status != null
-                ? alertRepository.findByStatusInProjects(status, scope.projectIds(), pageable)
-                : alertRepository.findInProjects(scope.projectIds(), pageable);
+            ? alertRepository.findByStatusInProjects(status, scope.projectIds(), pageable)
+            : alertRepository.findInProjects(scope.projectIds(), pageable);
     }
 
     @Transactional(readOnly = true)
@@ -123,13 +129,15 @@ public class AlertService {
 
         if (alert.getStatus() != AlertStatus.OPEN) {
             throw new ConflictException(
-                    "Only an OPEN alert can be acknowledged (current status: " + alert.getStatus() + ")");
+                "Only an OPEN alert can be acknowledged (current status: " + alert.getStatus() + ")");
         }
 
         alert.setStatus(AlertStatus.ACKNOWLEDGED);
         alert.setAcknowledgedAt(OffsetDateTime.now());
         alert.setAcknowledgedBy(userIdFor(userEmail));
-        return alertRepository.save(alert);
+        Alert saved = alertRepository.save(alert);
+        liveEvents.alertUpdated(projectIdOf(saved));
+        return saved;
     }
 
     /** OPEN or ACKNOWLEDGED -> RESOLVED */
@@ -144,7 +152,9 @@ public class AlertService {
         alert.setStatus(AlertStatus.RESOLVED);
         alert.setResolvedAt(OffsetDateTime.now());
         alert.setResolvedBy(userIdFor(userEmail));
-        return alertRepository.save(alert);
+        Alert saved = alertRepository.save(alert);
+        liveEvents.alertUpdated(projectIdOf(saved));
+        return saved;
     }
 
     /**
@@ -153,19 +163,22 @@ public class AlertService {
      */
     private Alert findVisibleAlert(Long id) {
         Alert alert = alertRepository.findWithEquipmentById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Alert not found with id: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("Alert not found with id: " + id));
 
-        // we are inside a transaction, so reading site -> project here is safe
-        Long projectId = alert.getEquipment().getSite().getProject().getId();
-        if (!accessService.canAccessProject(projectId)) {
+        if (!accessService.canAccessProject(projectIdOf(alert))) {
             throw new ResourceNotFoundException("Alert not found with id: " + id);
         }
         return alert;
     }
 
+    // we are inside a transaction, so reading equipment -> site -> project here is safe
+    private Long projectIdOf(Alert alert) {
+        return alert.getEquipment().getSite().getProject().getId();
+    }
+
     private Long userIdFor(String email) {
         return userRepository.findByEmail(email)
-                .map(User::getId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            .map(User::getId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }

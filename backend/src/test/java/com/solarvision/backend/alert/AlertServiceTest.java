@@ -7,6 +7,7 @@ import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.equipment.Equipment;
 import com.solarvision.backend.project.Project;
 import com.solarvision.backend.project.Site;
+import com.solarvision.backend.realtime.LiveEventPublisher;
 import com.solarvision.backend.user.User;
 import com.solarvision.backend.user.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -51,6 +52,8 @@ class AlertServiceTest {
     @Mock
     private AccessService accessService;
 
+    @Mock
+    private LiveEventPublisher liveEvents;
     @InjectMocks
     private AlertService service;
 

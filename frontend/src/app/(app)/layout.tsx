@@ -1,4 +1,5 @@
 import { Header } from "@/components/header";
+import { LiveUpdates } from "@/components/live-updates";
 import { Sidebar } from "@/components/sidebar";
 import { getCurrentUser } from "@/lib/session";
 
@@ -13,6 +14,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <Header user={user} />
         <main className="flex-1 p-6">{children}</main>
       </div>
+      {/* one live connection for every signed-in page */}
+      <LiveUpdates />
     </div>
   );
 }

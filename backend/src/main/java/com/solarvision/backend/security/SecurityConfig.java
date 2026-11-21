@@ -12,6 +12,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import jakarta.servlet.DispatcherType;
+
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
@@ -45,6 +47,11 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint))
                 .authorizeHttpRequests(auth -> {
+
+                    // SSE: when a live-events connection ends, Spring passes it through the filters
+                    // again (an "ASYNC dispatch"). The request was already checked when it started.
+                    auth.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll();
+
                     // the first matching rule wins, so specific rules come before general ones
                     auth.requestMatchers("/api/auth/register", "/api/auth/login").permitAll();
                     auth.requestMatchers("/error").permitAll();

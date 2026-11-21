@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { AutoRefresh } from "@/components/auto-refresh";
 import { EmptyState } from "@/components/empty-state";
 import { StatusBadge } from "@/components/status-badge";
 import { SummaryCard } from "@/components/summary-card";
@@ -43,12 +42,11 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <AutoRefresh seconds={30} />
 
       <div className="flex flex-wrap items-end justify-between gap-2">
         <h1 className="text-2xl font-semibold">Welcome back, {user.firstName}</h1>
         <p className="text-xs text-muted-foreground">
-          Updated {currentTimeLabel()} (Colombo time) · refreshes every 30 seconds
+          Updated {currentTimeLabel()} (Colombo time) · updates live
         </p>
       </div>
 

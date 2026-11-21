@@ -68,4 +68,12 @@ public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
         "FROM Equipment e " +
         "GROUP BY e.site.id")
     List<SiteEquipmentCount> countBySite();
+
+    /** The project an equipment belongs to (equipment -> site -> project). */
+    @Query("select e.site.project.id from Equipment e where e.id = :equipmentId")
+    Optional<Long> findProjectIdForEquipment(@Param("equipmentId") Long equipmentId);
+
+    /** The distinct projects that a group of equipment belongs to. */
+    @Query("select distinct e.site.project.id from Equipment e where e.id in :equipmentIds")
+    List<Long> findProjectIdsForEquipment(@Param("equipmentIds") Collection<Long> equipmentIds);
 }

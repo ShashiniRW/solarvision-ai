@@ -165,3 +165,12 @@ export type MapSite = {
   warningAlerts: number;
   health: SiteHealth;
 };
+
+export type LiveEventType = "ALERT_CREATED" | "ALERT_UPDATED" | "READINGS_RECORDED";
+
+export type LiveEvent = {
+  type: LiveEventType;
+  projectId: number;
+  severity: string | null;
+  message: string | null;
+};
