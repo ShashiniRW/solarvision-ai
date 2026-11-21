@@ -8,11 +8,12 @@ import com.solarvision.backend.equipment.Equipment;
 import com.solarvision.backend.equipment.EquipmentRepository;
 import com.solarvision.backend.monitoring.dto.CreateSensorReadingRequest;
 import com.solarvision.backend.monitoring.dto.DailyEnergySummaryResponse;
+import com.solarvision.backend.realtime.LiveEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration; // NEW
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -27,11 +28,12 @@ public class SensorReadingService {
     private final EquipmentRepository equipmentRepository;
     private final AlertService alertService;
     private final AccessService accessService;
+    private final LiveEventPublisher liveEvents;
 
     // For now every site uses one time zone; later this will come from the site
     private static final ZoneId SITE_ZONE = ZoneId.of("Asia/Colombo");
 
-    // NEW: how far a device clock may run ahead of the server before we reject the reading
+    // how far a device clock may run ahead of the server before we reject the reading
     private static final Duration MAX_CLOCK_SKEW = Duration.ofMinutes(5);
 
     /** Ingestion: NOT scoped (devices/simulator post readings; device auth comes later). */
@@ -39,31 +41,31 @@ public class SensorReadingService {
     public SensorReading create(CreateSensorReadingRequest request) {
 
         Equipment equipment = equipmentRepository.findById(request.getEquipmentId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Equipment not found with id: " + request.getEquipmentId()));
+            .orElseThrow(() -> new ResourceNotFoundException(
+                "Equipment not found with id: " + request.getEquipmentId()));
 
         // a reading with no measurements at all is meaningless
         if (request.getPowerKw() == null && request.getEnergyKwh() == null
-                && request.getVoltageV() == null && request.getCurrentA() == null
-                && request.getTemperatureC() == null) {
+            && request.getVoltageV() == null && request.getCurrentA() == null
+            && request.getTemperatureC() == null) {
             throw new IllegalArgumentException(
-                    "At least one measurement (power, energy, voltage, current or temperature) is required");
+                "At least one measurement (power, energy, voltage, current or temperature) is required");
         }
 
         OffsetDateTime recordedAt = request.getRecordedAt() != null
-                ? request.getRecordedAt()
-                : OffsetDateTime.now();
+            ? request.getRecordedAt()
+            : OffsetDateTime.now();
 
-        // NEW: a reading cannot come from the future (small clock differences are allowed)
+        // a reading cannot come from the future (small clock differences are allowed)
         if (recordedAt.isAfter(OffsetDateTime.now().plus(MAX_CLOCK_SKEW))) {
             throw new IllegalArgumentException(
-                    "recordedAt cannot be more than " + MAX_CLOCK_SKEW.toMinutes()
-                            + " minutes in the future");
+                "recordedAt cannot be more than " + MAX_CLOCK_SKEW.toMinutes()
+                    + " minutes in the future");
         }
 
         if (sensorReadingRepository.existsByEquipmentIdAndRecordedAt(equipment.getId(), recordedAt)) {
             throw new ConflictException(
-                    "A reading already exists for this equipment at " + recordedAt);
+                "A reading already exists for this equipment at " + recordedAt);
         }
 
         SensorReading reading = new SensorReading();
@@ -78,6 +80,7 @@ public class SensorReadingService {
 
         SensorReading saved = sensorReadingRepository.save(reading);
         alertService.evaluate(saved);
+        liveEvents.readingsRecorded(List.of(equipment.getId()));
         return saved;
     }
 
@@ -87,8 +90,8 @@ public class SensorReadingService {
         accessService.requireEquipmentAccess(equipmentId);
 
         return sensorReadingRepository.findFirstByEquipmentIdOrderByRecordedAtDesc(equipmentId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "No readings found for equipment id: " + equipmentId));
+            .orElseThrow(() -> new ResourceNotFoundException(
+                "No readings found for equipment id: " + equipmentId));
     }
 
     @Transactional(readOnly = true)
@@ -103,7 +106,7 @@ public class SensorReadingService {
             throw new IllegalArgumentException("Time range cannot exceed 31 days");
         }
         return sensorReadingRepository
-                .findByEquipmentIdAndRecordedAtBetweenOrderByRecordedAtAsc(equipmentId, from, to);
+            .findByEquipmentIdAndRecordedAtBetweenOrderByRecordedAtAsc(equipmentId, from, to);
     }
 
     @Transactional(readOnly = true)
@@ -122,9 +125,9 @@ public class SensorReadingService {
         OffsetDateTime toTs = to.plusDays(1).atStartOfDay(SITE_ZONE).toOffsetDateTime();
 
         return sensorReadingRepository
-                .findDailySummary(equipmentId, fromTs, toTs, SITE_ZONE.getId())
-                .stream()
-                .map(DailyEnergySummaryResponse::fromProjection)
-                .toList();
+            .findDailySummary(equipmentId, fromTs, toTs, SITE_ZONE.getId())
+            .stream()
+            .map(DailyEnergySummaryResponse::fromProjection)
+            .toList();
     }
 }

@@ -3,6 +3,7 @@ package com.solarvision.backend.monitoring;
 import com.solarvision.backend.alert.AlertService;
 import com.solarvision.backend.equipment.Equipment;
 import com.solarvision.backend.equipment.EquipmentRepository;
+import com.solarvision.backend.realtime.LiveEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +42,7 @@ public class SensorReadingSimulator {
     private final EquipmentRepository equipmentRepository;
     private final SensorReadingRepository sensorReadingRepository;
     private final AlertService alertService;
+    private final LiveEventPublisher liveEvents;
     private final Random random = new Random();
 
     @Value("${app.simulator.interval-ms:60000}")
@@ -80,6 +82,9 @@ public class SensorReadingSimulator {
                 log.error("Alert evaluation failed for reading {}", reading.getId(), ex);
             }
         }
+
+        // tell the browsers that new readings exist (one small event per project)
+        liveEvents.readingsRecorded(saved.stream().map(r -> r.getEquipment().getId()).toList());
     }
 
     private SensorReading buildReading(Equipment inverter, OffsetDateTime now) {

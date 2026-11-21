@@ -7,6 +7,7 @@ import com.solarvision.backend.common.exception.ResourceNotFoundException;
 import com.solarvision.backend.equipment.Equipment;
 import com.solarvision.backend.equipment.EquipmentRepository;
 import com.solarvision.backend.monitoring.dto.CreateSensorReadingRequest;
+import com.solarvision.backend.realtime.LiveEventPublisher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -46,6 +47,9 @@ class SensorReadingServiceTest {
 
     @Mock
     private AccessService accessService; // by default: access allowed (does nothing)
+
+    @Mock
+    private LiveEventPublisher liveEvents;
 
     @InjectMocks
     private SensorReadingService service;
