@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/lib/navigation";
 
@@ -13,9 +14,9 @@ export function Sidebar({ roles }: { roles: string[] }) {
 
   return (
     <aside className="hidden w-60 shrink-0 border-r bg-card md:block">
-      <div className="px-6 py-5 text-lg font-semibold text-amber-600 dark:text-amber-500">
-        SolarVision AI
-      </div>
+      <Link href="/dashboard" className="flex px-6 py-5 text-lg" aria-label="SolarVision AI home">
+        <Logo />
+      </Link>
       <nav aria-label="Main" className="px-3">
         <ul className="space-y-1">
           {items.map((item) => {

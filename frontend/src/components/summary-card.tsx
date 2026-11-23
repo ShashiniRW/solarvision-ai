@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { CountUp } from "@/components/count-up";
 
 type Tone = "normal" | "warning" | "danger";
 
@@ -26,7 +27,9 @@ export function SummaryCard({ label, value, hint, href, tone = "normal" }: Props
     <Card className={cn("h-full", TONES[tone])}>
       <CardHeader>
         <CardDescription className="text-xs uppercase tracking-wide">{label}</CardDescription>
-        <CardTitle className="text-3xl font-semibold tabular-nums">{value}</CardTitle>
+        <CardTitle className="text-3xl font-semibold tabular-nums">
+          <CountUp value={value} />
+        </CardTitle>
       </CardHeader>
       {hint && (
         <CardContent>
@@ -43,7 +46,7 @@ export function SummaryCard({ label, value, hint, href, tone = "normal" }: Props
   return (
     <Link
       href={href}
-      className="block rounded-xl transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="block rounded-xl transition duration-200 hover:shadow-md motion-safe:hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {card}
     </Link>

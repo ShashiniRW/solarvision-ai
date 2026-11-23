@@ -48,6 +48,22 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Brand animations: "animate-fade-up" = fade in while moving up a little */
+@theme {
+  --animate-fade-up: fade-up 0.35s ease-out both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -66,12 +82,13 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --ring: oklch(0.769 0.188 70.08); /* brand amber focus ring */
+  /* brand chart palette: amber, blue, cyan, green, red */
+  --chart-1: oklch(0.769 0.188 70.08);
+  --chart-2: oklch(0.546 0.245 262.881);
+  --chart-3: oklch(0.715 0.143 215.221);
+  --chart-4: oklch(0.723 0.219 149.579);
+  --chart-5: oklch(0.637 0.237 25.331);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -101,12 +118,12 @@
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --ring: oklch(0.666 0.179 58.318); /* brand amber focus ring */
+  --chart-1: oklch(0.769 0.188 70.08);
+  --chart-2: oklch(0.623 0.214 259.815);
+  --chart-3: oklch(0.715 0.143 215.221);
+  --chart-4: oklch(0.723 0.219 149.579);
+  --chart-5: oklch(0.704 0.191 22.216);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -127,9 +144,24 @@
   html {
     @apply font-sans;
   }
+  ::selection {
+    @apply bg-amber-200 text-amber-950;
+  }
 }
 
 /* Dark mode: darken the map tiles only (markers and popups keep their real colours) */
 .dark .leaflet-tile-pane {
   filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
+}
+
+/* Accessibility: people who asked their system for less motion get (almost) no animation */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
