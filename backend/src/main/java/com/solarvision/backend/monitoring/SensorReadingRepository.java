@@ -54,4 +54,13 @@ public interface SensorReadingRepository extends JpaRepository<SensorReading, Lo
     BigDecimal sumEnergyBetweenInProjects(@Param("rangeStart") OffsetDateTime rangeStart,
                                           @Param("rangeEnd") OffsetDateTime rangeEnd,
                                           @Param("projectIds") Collection<Long> projectIds);
+
+    /** The newest reading of every equipment at a site, in one query. */
+    @Query("""
+            select r from SensorReading r
+            where r.equipment.site.id = :siteId
+              and r.recordedAt = (select max(r2.recordedAt) from SensorReading r2
+                                  where r2.equipment = r.equipment)
+            """)
+    List<SensorReading> findLatestForSite(@Param("siteId") Long siteId);
 }

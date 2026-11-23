@@ -174,3 +174,24 @@ export type LiveEvent = {
   severity: string | null;
   message: string | null;
 };
+
+// ---------- 3D digital twin ----------
+
+export type TwinEquipment = {
+  id: number;
+  equipmentType: string;
+  serialNumber: string | null;
+  model: string | null;
+  capacityKw: number | null;
+  status: string;
+  health: SiteHealth;
+  powerKw: number | null; // null = no readings yet
+  temperatureC: number | null;
+  lastReadingAt: string | null;
+};
+
+export type SiteTwin = {
+  siteId: number;
+  siteName: string;
+  equipment: TwinEquipment[];
+};
