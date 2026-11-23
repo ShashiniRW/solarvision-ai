@@ -123,4 +123,14 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
         "WHERE a.status <> :status " +
         "GROUP BY a.equipment.site.id, a.severity")
     List<SiteAlertCount> countUnresolvedBySiteAndSeverity(@Param("status") AlertStatus status);
+
+    /** Unresolved alerts per equipment and severity, for one site (used by the 3D twin). */
+    @Query("""
+            select new com.solarvision.backend.alert.EquipmentAlertCount(a.equipment.id, a.severity, count(a))
+            from Alert a
+            where a.equipment.site.id = :siteId and a.status <> :resolved
+            group by a.equipment.id, a.severity
+            """)
+    List<EquipmentAlertCount> countUnresolvedByEquipmentForSite(@Param("siteId") Long siteId,
+                                                                @Param("resolved") AlertStatus resolved);
 }

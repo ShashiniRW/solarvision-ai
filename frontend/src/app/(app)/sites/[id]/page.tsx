@@ -4,6 +4,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { EmptyState } from "@/components/empty-state";
 import { ForecastCard, ForecastCardSkeleton } from "@/components/forecast-card";
 import { InfoGrid } from "@/components/info-grid";
+import { SiteTwinView } from "@/components/site-twin-loader";
 import { StatusBadge } from "@/components/status-badge";
 import {
   Table,
@@ -16,8 +17,12 @@ import {
 import { apiGet, apiGetOrNotFound } from "@/lib/api";
 import { formatDate, formatKw } from "@/lib/format";
 import { parseId } from "@/lib/params";
+import { HEALTH_COLORS, HEALTH_LABELS } from "@/lib/site-health";
 import { linkClass } from "@/lib/styles";
-import type { Equipment, Site } from "@/lib/types";
+import { currentColomboHour } from "@/lib/sun";
+import type { Equipment, Site, SiteHealth, SiteTwin } from "@/lib/types";
+
+const LEGEND: SiteHealth[] = ["CRITICAL", "WARNING", "OK"];
 
 export default async function SiteDetailPage({
   params,
@@ -26,7 +31,17 @@ export default async function SiteDetailPage({
 }) {
   const siteId = parseId((await params).id);
   const site = await apiGetOrNotFound<Site>(`/api/sites/${siteId}`);
-  const equipment = await apiGet<Equipment[]>(`/api/equipment?siteId=${siteId}`);
+
+  // both requests run at the same time
+  const [equipment, twin] = await Promise.all([
+    apiGet<Equipment[]>(`/api/equipment?siteId=${siteId}`),
+    apiGet<SiteTwin>(`/api/sites/${siteId}/twin`),
+  ]);
+
+  const healthCounts = LEGEND.map((health) => ({
+    health,
+    count: twin.equipment.filter((item) => item.health === health).length,
+  }));
 
   return (
     <div>
@@ -56,6 +71,33 @@ export default async function SiteDetailPage({
           ]}
         />
       </div>
+
+      {twin.equipment.length > 0 && (
+        <section className="mt-8">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <h2 className="text-lg font-semibold">3D digital twin</h2>
+            <ul className="flex flex-wrap gap-4 text-sm">
+              {healthCounts.map(({ health, count }) => (
+                <li key={health} className="flex items-center gap-1.5">
+                  <span
+                    className="inline-block size-2.5 rounded-full"
+                    style={{ backgroundColor: HEALTH_COLORS[health] }}
+                    aria-hidden="true"
+                  />
+                  {HEALTH_LABELS[health]}: {count}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Drag to rotate · scroll to zoom · click equipment to open it. Lighting follows the time of
+            day in Colombo; the colours update live.
+          </p>
+          <div className="isolate mt-3 h-112 overflow-hidden rounded-xl border">
+            <SiteTwinView equipment={twin.equipment} colomboHour={currentColomboHour()} />
+          </div>
+        </section>
+      )}
 
       {/* The forecast streams in on its own: the rest of the page never waits for the weather */}
       <div className="mt-8">
