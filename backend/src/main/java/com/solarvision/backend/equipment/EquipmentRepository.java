@@ -5,9 +5,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
@@ -76,4 +78,16 @@ public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
     /** The distinct projects that a group of equipment belongs to. */
     @Query("select distinct e.site.project.id from Equipment e where e.id in :equipmentIds")
     List<Long> findProjectIdsForEquipment(@Param("equipmentIds") Collection<Long> equipmentIds);
+
+    /** Total capacity of the active inverters (the most power the sites can deliver). */
+    @Query("select sum(e.capacityKw) from Equipment e where e.equipmentType = 'INVERTER' and e.status = 'ACTIVE'")
+    BigDecimal sumActiveInverterCapacity();
+
+    /** Same as above, only for the given projects. */
+    @Query("""
+            select sum(e.capacityKw) from Equipment e
+            where e.equipmentType = 'INVERTER' and e.status = 'ACTIVE'
+              and e.site.project.id in :projectIds
+            """)
+    BigDecimal sumActiveInverterCapacityInProjects(@Param("projectIds") Set<Long> projectIds);
 }
