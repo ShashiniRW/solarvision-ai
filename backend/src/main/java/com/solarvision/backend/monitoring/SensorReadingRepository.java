@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface SensorReadingRepository extends JpaRepository<SensorReading, Long> {
 
@@ -63,4 +64,26 @@ public interface SensorReadingRepository extends JpaRepository<SensorReading, Lo
                                   where r2.equipment = r.equipment)
             """)
     List<SensorReading> findLatestForSite(@Param("siteId") Long siteId);
+
+    /** Live power: the newest reading of every inverter, counted only if it arrived after 'since'. */
+    @Query("""
+            select sum(r.powerKw) from SensorReading r
+            where r.equipment.equipmentType = 'INVERTER'
+              and r.recordedAt >= :since
+              and r.recordedAt = (select max(r2.recordedAt) from SensorReading r2
+                                  where r2.equipment = r.equipment)
+            """)
+    BigDecimal sumLatestInverterPowerSince(@Param("since") OffsetDateTime since);
+
+    /** Same as above, only for the given projects. */
+    @Query("""
+            select sum(r.powerKw) from SensorReading r
+            where r.equipment.equipmentType = 'INVERTER'
+              and r.equipment.site.project.id in :projectIds
+              and r.recordedAt >= :since
+              and r.recordedAt = (select max(r2.recordedAt) from SensorReading r2
+                                  where r2.equipment = r.equipment)
+            """)
+    BigDecimal sumLatestInverterPowerSinceInProjects(@Param("since") OffsetDateTime since,
+                                                     @Param("projectIds") Set<Long> projectIds);
 }

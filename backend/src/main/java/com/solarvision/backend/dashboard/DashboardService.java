@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -26,6 +27,9 @@ public class DashboardService {
 
     // For now every site uses one time zone; later this will come from the site
     private static final ZoneId SITE_ZONE = ZoneId.of("Asia/Colombo");
+
+    // A reading older than this no longer counts as "power right now" (the inverter may be offline)
+    private static final Duration LIVE_WINDOW = Duration.ofMinutes(15);
 
     private final AlertRepository alertRepository;
     private final InspectionRepository inspectionRepository;
@@ -51,21 +55,23 @@ public class DashboardService {
     private DashboardSummaryResponse summaryOfEverything() {
         ZonedDateTime startOfToday = startOfToday();
         BigDecimal energyToday = sensorReadingRepository.sumEnergyBetween(
-                startOfToday.toOffsetDateTime(),
-                startOfToday.plusDays(1).toOffsetDateTime());
+            startOfToday.toOffsetDateTime(),
+            startOfToday.plusDays(1).toOffsetDateTime());
 
         return new DashboardSummaryResponse(
-                alertRepository.countByStatus(AlertStatus.OPEN),
-                alertRepository.countByStatus(AlertStatus.ACKNOWLEDGED),
-                alertRepository.countBySeverityAndStatusNot(AlertSeverity.CRITICAL, AlertStatus.RESOLVED),
-                inspectionRepository.countByStatus(InspectionStatus.SCHEDULED),
-                inspectionRepository.countByStatus(InspectionStatus.IN_PROGRESS),
-                inspectionRepository.countByStatusAndScheduledAtBefore(
-                        InspectionStatus.SCHEDULED, OffsetDateTime.now()),
-                equipmentRepository.count(),
-                equipmentRepository.countByStatus("ACTIVE"),
-                equipmentRepository.countByStatus("FAULTY"),
-                orZero(energyToday)
+            alertRepository.countByStatus(AlertStatus.OPEN),
+            alertRepository.countByStatus(AlertStatus.ACKNOWLEDGED),
+            alertRepository.countBySeverityAndStatusNot(AlertSeverity.CRITICAL, AlertStatus.RESOLVED),
+            inspectionRepository.countByStatus(InspectionStatus.SCHEDULED),
+            inspectionRepository.countByStatus(InspectionStatus.IN_PROGRESS),
+            inspectionRepository.countByStatusAndScheduledAtBefore(
+                InspectionStatus.SCHEDULED, OffsetDateTime.now()),
+            equipmentRepository.count(),
+            equipmentRepository.countByStatus("ACTIVE"),
+            equipmentRepository.countByStatus("FAULTY"),
+            orZero(energyToday),
+            orZero(sensorReadingRepository.sumLatestInverterPowerSince(liveSince())),
+            orZero(equipmentRepository.sumActiveInverterCapacity())
         );
     }
 
@@ -74,28 +80,31 @@ public class DashboardService {
     private DashboardSummaryResponse summaryOfProjects(Set<Long> projectIds) {
         ZonedDateTime startOfToday = startOfToday();
         BigDecimal energyToday = sensorReadingRepository.sumEnergyBetweenInProjects(
-                startOfToday.toOffsetDateTime(),
-                startOfToday.plusDays(1).toOffsetDateTime(),
-                projectIds);
+            startOfToday.toOffsetDateTime(),
+            startOfToday.plusDays(1).toOffsetDateTime(),
+            projectIds);
 
         return new DashboardSummaryResponse(
-                alertRepository.countByStatusInProjects(AlertStatus.OPEN, projectIds),
-                alertRepository.countByStatusInProjects(AlertStatus.ACKNOWLEDGED, projectIds),
-                alertRepository.countBySeverityAndStatusNotInProjects(
-                        AlertSeverity.CRITICAL, AlertStatus.RESOLVED, projectIds),
-                inspectionRepository.countByStatusInProjects(InspectionStatus.SCHEDULED, projectIds),
-                inspectionRepository.countByStatusInProjects(InspectionStatus.IN_PROGRESS, projectIds),
-                inspectionRepository.countByStatusAndScheduledAtBeforeInProjects(
-                        InspectionStatus.SCHEDULED, OffsetDateTime.now(), projectIds),
-                equipmentRepository.countInProjects(projectIds),
-                equipmentRepository.countByStatusInProjects("ACTIVE", projectIds),
-                equipmentRepository.countByStatusInProjects("FAULTY", projectIds),
-                orZero(energyToday)
+            alertRepository.countByStatusInProjects(AlertStatus.OPEN, projectIds),
+            alertRepository.countByStatusInProjects(AlertStatus.ACKNOWLEDGED, projectIds),
+            alertRepository.countBySeverityAndStatusNotInProjects(
+                AlertSeverity.CRITICAL, AlertStatus.RESOLVED, projectIds),
+            inspectionRepository.countByStatusInProjects(InspectionStatus.SCHEDULED, projectIds),
+            inspectionRepository.countByStatusInProjects(InspectionStatus.IN_PROGRESS, projectIds),
+            inspectionRepository.countByStatusAndScheduledAtBeforeInProjects(
+                InspectionStatus.SCHEDULED, OffsetDateTime.now(), projectIds),
+            equipmentRepository.countInProjects(projectIds),
+            equipmentRepository.countByStatusInProjects("ACTIVE", projectIds),
+            equipmentRepository.countByStatusInProjects("FAULTY", projectIds),
+            orZero(energyToday),
+            orZero(sensorReadingRepository.sumLatestInverterPowerSinceInProjects(liveSince(), projectIds)),
+            orZero(equipmentRepository.sumActiveInverterCapacityInProjects(projectIds))
         );
     }
 
     private DashboardSummaryResponse emptySummary() {
-        return new DashboardSummaryResponse(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, BigDecimal.ZERO);
+        return new DashboardSummaryResponse(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L,
+            BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
     }
 
     // ---------- helpers ----------
@@ -103,6 +112,11 @@ public class DashboardService {
     /** "today" is the current day in the site's time zone */
     private ZonedDateTime startOfToday() {
         return LocalDate.now(SITE_ZONE).atStartOfDay(SITE_ZONE);
+    }
+
+    /** only readings newer than this count as live power */
+    private static OffsetDateTime liveSince() {
+        return OffsetDateTime.now().minus(LIVE_WINDOW);
     }
 
     private static BigDecimal orZero(BigDecimal value) {

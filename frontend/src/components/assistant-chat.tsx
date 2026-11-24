@@ -4,7 +4,8 @@ import { FormEvent, KeyboardEvent, useEffect, useId, useRef, useState } from "re
 import { useRouter } from "next/navigation";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Bot, FileText, RotateCcw, Send } from "lucide-react";
+import { FileText, RotateCcw, Send } from "lucide-react";
+import { AssistantAvatar } from "@/components/assistant-avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { brandButtonClass } from "@/lib/styles";
@@ -159,7 +160,7 @@ export function AssistantChat() {
       <div role="log" aria-live="polite" aria-label="Conversation" className="flex-1 space-y-4 overflow-y-auto p-4">
         {turns.length === 0 && !busy && (
           <div className="mx-auto flex max-w-xl flex-col items-center gap-4 py-8 text-center">
-            <Bot className="size-10 text-amber-500" aria-hidden="true" />
+            <AssistantAvatar className="size-14" />
             <div className="space-y-1">
               <h2 className="text-lg font-semibold">Ask about solar maintenance or SolarVision</h2>
               <p className="text-sm text-muted-foreground">Try one of these questions:</p>
@@ -180,7 +181,8 @@ export function AssistantChat() {
         )}
 
         {turns.map((turn, index) => (
-          <div key={index} className={turn.role === "user" ? "flex justify-end" : "flex justify-start"}>
+          <div key={index} className={turn.role === "user" ? "flex justify-end" : "flex justify-start gap-2"}>
+            {turn.role === "model" && <AssistantAvatar className="mt-1" />}
             <div
               className={
                 turn.role === "user"
@@ -217,7 +219,8 @@ export function AssistantChat() {
         ))}
 
         {busy && (
-          <div role="status" className="flex justify-start">
+          <div role="status" className="flex justify-start gap-2">
+            <AssistantAvatar thinking className="mt-1" />
             <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm bg-muted px-4 py-3 text-sm text-muted-foreground">
               <span className="flex gap-1" aria-hidden="true">
                 <span className="size-1.5 animate-bounce rounded-full bg-current motion-reduce:animate-none" />

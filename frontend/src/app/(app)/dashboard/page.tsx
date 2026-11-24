@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { currentColomboHour, sunPosition } from "@/lib/sun";
 import { EmptyState } from "@/components/empty-state";
+import { EnergyFlow } from "@/components/energy-flow";
 import { StatusBadge } from "@/components/status-badge";
 import { SummaryCard } from "@/components/summary-card";
 import {
@@ -76,6 +78,16 @@ export default async function DashboardPage() {
           hint={`${summary.equipmentFaulty} faulty`}
           href="/projects"
           tone={equipmentTone}
+        />
+      </div>
+
+      <div className="mt-8">
+        <EnergyFlow
+          powerKw={summary.currentPowerKw}
+          capacityKw={summary.capacityKw}
+          energyTodayKwh={summary.energyTodayKwh}
+          criticalAlerts={summary.unresolvedCriticalAlerts}
+          isDay={sunPosition(currentColomboHour(), 1).isDay}
         />
       </div>
 

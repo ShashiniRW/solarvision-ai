@@ -109,6 +109,8 @@ export type DashboardSummary = {
   equipmentActive: number;
   equipmentFaulty: number;
   energyTodayKwh: number;
+  currentPowerKw: number; // newest inverter readings from the last 15 minutes
+  capacityKw: number; // capacity of the active inverters
 };
 
 export type ForecastDay = {

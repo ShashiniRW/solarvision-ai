@@ -186,4 +186,34 @@ class DashboardServiceTest {
         assertThat(result.energyTodayKwh()).isEqualByComparingTo(BigDecimal.ZERO);
         verifyNoInteractions(alertRepository, inspectionRepository, equipmentRepository, sensorReadingRepository);
     }
+
+    // ---------- live power (energy flow) ----------
+
+    @Test
+    void getSummary_reportsLivePowerAndInverterCapacity() {
+        loggedInAsAdmin();
+        when(sensorReadingRepository.sumLatestInverterPowerSince(any(OffsetDateTime.class)))
+            .thenReturn(new BigDecimal("3.75"));
+        when(equipmentRepository.sumActiveInverterCapacity()).thenReturn(new BigDecimal("10.00"));
+
+        DashboardSummaryResponse result = service.getSummary();
+
+        assertThat(result.currentPowerKw()).isEqualByComparingTo("3.75");
+        assertThat(result.capacityKw()).isEqualByComparingTo("10");
+    }
+
+    @Test
+    void getSummary_livePower_usesTheLast15Minutes_andIsZeroWhenNothingReported() {
+        loggedInWithProjects(MY_PROJECTS);
+        // nothing reported recently: the repositories return null
+
+        DashboardSummaryResponse result = service.getSummary();
+
+        ArgumentCaptor<OffsetDateTime> since = ArgumentCaptor.forClass(OffsetDateTime.class);
+        verify(sensorReadingRepository).sumLatestInverterPowerSinceInProjects(since.capture(), eq(MY_PROJECTS));
+        assertThat(since.getValue()).isBetween(
+            OffsetDateTime.now().minusMinutes(16), OffsetDateTime.now().minusMinutes(14));
+        assertThat(result.currentPowerKw()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(result.capacityKw()).isEqualByComparingTo(BigDecimal.ZERO);
+    }
 }
