@@ -10,6 +10,8 @@ const NODE_TONES: Record<Tone, string> = {
   idle: "bg-muted text-muted-foreground ring-border",
 };
 
+// Narrow card (phones): nodes stacked top to bottom, icon on the left.
+// Wide card (@xl = 576 px and more): nodes in one row, left to right.
 function FlowNode({
   icon: Icon,
   label,
@@ -22,36 +24,58 @@ function FlowNode({
   tone: Tone;
 }) {
   return (
-    <div className="flex w-20 shrink-0 flex-col items-center gap-1.5 text-center sm:w-28">
+    <div className="flex items-center gap-3 @xl:w-28 @xl:shrink-0 @xl:flex-col @xl:gap-1.5 @xl:text-center">
       <span
         className={cn(
-          "flex size-12 items-center justify-center rounded-full ring-2",
+          "flex size-12 shrink-0 items-center justify-center rounded-full ring-2",
           NODE_TONES[tone],
           tone === "sun" && "motion-safe:animate-pulse",
         )}
       >
         <Icon className="size-6" />
       </span>
-      <span className="text-xs font-medium">{label}</span>
-      <span className="text-xs tabular-nums text-muted-foreground">{value}</span>
+      <span className="flex flex-col @xl:items-center @xl:gap-1.5">
+        <span className="text-sm font-medium @xl:text-xs">{label}</span>
+        <span className="text-xs tabular-nums text-muted-foreground">{value}</span>
+      </span>
     </div>
   );
 }
 
+const DOTS = "radial-gradient(circle, currentColor 2.5px, transparent 3px)";
+
 /** A line with glowing dots moving along it. No dots = no power flowing. */
 function FlowLine({ seconds, fault }: { seconds: number; fault: boolean }) {
+  const color = fault ? "text-red-500" : "text-amber-500";
+  const animationDuration = `${seconds}s`;
+
   return (
-    <div className="relative mt-5.25 h-1.5 min-w-6 flex-1 overflow-hidden rounded-full bg-muted">
+    // narrow: a short vertical line under the centre of the icon (48 px icon, 6 px line: 21 px in)
+    // wide: a horizontal line between the icons
+    <div className="relative my-1 ml-5.25 h-8 w-1.5 overflow-hidden rounded-full bg-muted @xl:my-0 @xl:mt-5.25 @xl:ml-0 @xl:h-1.5 @xl:w-auto @xl:min-w-6 @xl:flex-1">
       {seconds > 0 && (
-        <div
-          className={cn("absolute inset-0 animate-flow", fault ? "text-red-500" : "text-amber-500")}
-          style={{
-            backgroundImage: "radial-gradient(circle, currentColor 2.5px, transparent 3px)",
-            backgroundSize: "16px 6px",
-            backgroundPositionY: "center",
-            animationDuration: `${seconds}s`,
-          }}
-        />
+        <>
+          {/* dots falling down */}
+          <div
+            className={cn("absolute inset-0 animate-flow-down @xl:hidden", color)}
+            style={{
+              backgroundImage: DOTS,
+              backgroundSize: "6px 16px",
+              backgroundPositionX: "center",
+              animationDuration,
+            }}
+          />
+          {/* dots moving right */}
+          <div
+            className={cn("absolute inset-0 hidden animate-flow @xl:block", color)}
+            style={{
+              backgroundImage: DOTS,
+              backgroundSize: "16px 6px",
+              backgroundPositionY: "center",
+              animationDuration,
+            }}
+          />
+        </>
       )}
     </div>
   );
@@ -86,7 +110,8 @@ export function EnergyFlow({ powerKw, capacityKw, energyTodayKwh, criticalAlerts
     (fault ? `${criticalAlerts} critical alerts.` : "No critical alerts.");
 
   return (
-    <section aria-labelledby="energy-flow-title" className="rounded-xl border bg-card p-5">
+    // @container: the layout follows the width of this card, not the whole screen
+    <section aria-labelledby="energy-flow-title" className="@container rounded-xl border bg-card p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="energy-flow-title" className="text-lg font-semibold">
           Live energy flow
@@ -95,7 +120,7 @@ export function EnergyFlow({ powerKw, capacityKw, energyTodayKwh, criticalAlerts
       </div>
       <p className="sr-only">{summary}</p>
 
-      <div className="mt-5 flex items-start" aria-hidden="true">
+      <div className="mt-5 flex flex-col @xl:flex-row @xl:items-start" aria-hidden="true">
         <FlowNode
           icon={isDay ? Sun : Moon}
           label={isDay ? "Sun" : "Night"}

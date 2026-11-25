@@ -78,6 +78,7 @@ export function SiteMap({ sites }: { sites: MapSite[] }) {
       return;
     }
     let map: LeafletMap | undefined;
+    let resizeObserver: ResizeObserver | undefined;
     let cancelled = false;
 
     // Leaflet needs the browser (window), so it is loaded here only, never on the server
@@ -110,11 +111,16 @@ export function SiteMap({ sites }: { sites: MapSite[] }) {
       } else {
         map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
       }
+
+      // full screen (or a rotated phone) changes the map's size: redraw the tiles to fit
+      resizeObserver = new ResizeObserver(() => map?.invalidateSize());
+      resizeObserver.observe(container);
     });
 
     // remove the map when the page is left (or re-rendered), so nothing leaks
     return () => {
       cancelled = true;
+      resizeObserver?.disconnect();
       map?.remove();
     };
   }, [sites, router]);
@@ -124,8 +130,8 @@ export function SiteMap({ sites }: { sites: MapSite[] }) {
       ref={containerRef}
       role="region"
       aria-label="Map of solar sites. The same sites are listed in the table below."
-      // isolate: keeps Leaflet's layers below the app's menus and dialogs
-      className="isolate h-112 w-full overflow-hidden rounded-xl border"
+      // fills the FullscreenFrame around it (the frame sets the size and border)
+      className="h-full w-full"
     />
   );
 }

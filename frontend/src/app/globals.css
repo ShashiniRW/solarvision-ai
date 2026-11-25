@@ -73,6 +73,19 @@
       background-position-x: 16px;
     }
   }
+
+    --animate-flow-down: flow-down 1s linear infinite;
+
+  @keyframes flow-down {
+    from {
+      background-position-y: 0;
+    }
+    to {
+      background-position-y: 16px;
+    }
+  }
+
+
 }
 
 :root {
