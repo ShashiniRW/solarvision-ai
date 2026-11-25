@@ -1,16 +1,24 @@
+import Link from "next/link";
+import { Logo } from "@/components/logo";
 import { LogoutButton } from "@/components/logout-button";
+import { MobileNav } from "@/components/mobile-nav";
 import { ModeToggle } from "@/components/mode-toggle";
 import type { CurrentUser } from "@/lib/session";
 
 export function Header({ user }: { user: CurrentUser }) {
   return (
-    <header className="flex items-center justify-between border-b bg-card px-6 py-3">
-      <span className="font-semibold text-amber-600 md:hidden dark:text-amber-500">
-        SolarVision AI
-      </span>
+    <header className="flex items-center justify-between gap-3 border-b bg-card px-4 py-2 md:px-6 md:py-3">
+      {/* phones: menu button + logo (desktop shows the logo in the sidebar) */}
+      <div className="flex items-center gap-1 md:hidden">
+        <MobileNav roles={user.roles} />
+        <Link href="/dashboard" aria-label="SolarVision AI home">
+          <Logo />
+        </Link>
+      </div>
       <span className="hidden md:block" />
-      <div className="flex items-center gap-3">
-        <div className="text-right">
+
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="hidden text-right sm:block">
           <p className="text-sm font-medium">
             {user.firstName} {user.lastName}
           </p>

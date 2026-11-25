@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { EmptyState } from "@/components/empty-state";
+import { FullscreenFrame } from "@/components/fullscreen-frame";
 import { ForecastCard, ForecastCardSkeleton } from "@/components/forecast-card";
 import { InfoGrid } from "@/components/info-grid";
 import { SiteTwinView } from "@/components/site-twin-loader";
@@ -90,12 +91,12 @@ export default async function SiteDetailPage({
             </ul>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Drag to rotate · scroll to zoom · click equipment to open it. Lighting follows the time of
-            day in Colombo; the colours update live.
+            Drag to rotate · scroll or pinch to zoom · click or tap equipment to open it. Lighting
+            follows the time of day in Colombo; the colours update live.
           </p>
-          <div className="isolate mt-3 h-112 overflow-hidden rounded-xl border">
+          <FullscreenFrame label="3D digital twin" className="mt-3 h-112 overflow-hidden rounded-xl border">
             <SiteTwinView equipment={twin.equipment} colomboHour={currentColomboHour()} />
-          </div>
+          </FullscreenFrame>
         </section>
       )}
 

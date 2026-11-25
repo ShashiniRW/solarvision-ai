@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteMap } from "@/components/site-map";
+import { FullscreenFrame } from "@/components/fullscreen-frame";
 import {
   Table,
   TableBody,
@@ -67,7 +68,9 @@ export default async function MapPage() {
             ))}
           </ul>
 
-          <SiteMap sites={sites} />
+          <FullscreenFrame label="site map" className="h-112 overflow-hidden rounded-xl border">
+            <SiteMap sites={sites} />
+          </FullscreenFrame>
 
           {withoutLocation.length > 0 && (
             <p role="note" className="text-sm text-muted-foreground">
