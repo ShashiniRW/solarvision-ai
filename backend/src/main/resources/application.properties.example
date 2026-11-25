@@ -38,3 +38,8 @@ app.ai.internal-api-key=<paste the key from ai-service/.env>
 
 # Chat answers can take 5-15 s; this is how long the backend waits (default 45s)
 # app.ai.chat-read-timeout=45s
+
+# Demo data: creates demo projects, users and 30 days of readings once at startup.
+# Keep false in real use. If true, app.demo.password is required (at least 12 characters).
+app.demo.enabled=false
+app.demo.password=CHANGE_ME_AT_LEAST_12_CHARACTERS
