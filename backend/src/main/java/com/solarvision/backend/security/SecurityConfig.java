@@ -53,7 +53,8 @@ public class SecurityConfig {
                     auth.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll();
 
                     // the first matching rule wins, so specific rules come before general ones
-                    auth.requestMatchers("/api/auth/register", "/api/auth/login").permitAll();
+                    auth.requestMatchers("/api/auth/register", "/api/auth/login",
+                        "/api/auth/demo", "/api/auth/demo-login").permitAll();
                     auth.requestMatchers("/error").permitAll();
 
                     // sensor readings: staff only, until devices get their own credentials

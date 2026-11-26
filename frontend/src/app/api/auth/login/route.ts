@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { BACKEND_URL, TOKEN_COOKIE, TOKEN_MAX_AGE_SECONDS } from "@/lib/backend";
+import { BACKEND_URL } from "@/lib/backend";
+import { signedInResponse } from "@/lib/token-cookie";
 
 // Receives the login form, asks Spring Boot to check it, and stores the token
 // in a secret (httpOnly) cookie. The token is never sent back to the browser.
@@ -31,15 +32,5 @@ export async function POST(request: Request) {
     );
   }
 
-  const response = NextResponse.json({ ok: true });
-  response.cookies.set({
-    name: TOKEN_COOKIE,
-    value: data.token,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: TOKEN_MAX_AGE_SECONDS,
-  });
-  return response;
+  return signedInResponse(data.token);
 }
