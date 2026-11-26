@@ -1,16 +1,29 @@
+import { DemoLogin } from "@/components/demo-login";
 import { LoginForm } from "@/components/login-form";
 import { LoginHeroView } from "@/components/login-hero-loader";
 import { Logo } from "@/components/logo";
 import { ModeToggle } from "@/components/mode-toggle";
+import { BACKEND_URL } from "@/lib/backend";
 
 const FEATURES = ["Live monitoring", "AI anomaly detection", "3D digital twin", "Maintenance workflow"];
+
+/** True when the backend runs in demo mode (the endpoint only exists then). */
+async function isDemoEnabled() {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/auth/demo`, { cache: "no-store" });
+    return response.ok;
+  } catch {
+    return false; // backend not reachable: simply hide the demo buttons
+  }
+}
 
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ next?: string | string[]; expired?: string }>;
 }) {
-  const { next, expired } = await searchParams;
+  // both run at the same time
+  const [{ next, expired }, demoEnabled] = await Promise.all([searchParams, isDemoEnabled()]);
 
   return (
     <main className="grid min-h-screen bg-background text-foreground lg:grid-cols-[1.15fr_1fr]">
@@ -60,6 +73,12 @@ export default async function LoginPage({
           <div className="mt-6">
             <LoginForm next={typeof next === "string" ? next : undefined} />
           </div>
+
+          {demoEnabled && (
+            <div className="mt-8">
+              <DemoLogin />
+            </div>
+          )}
 
           <p className="mt-8 text-xs text-muted-foreground">
             Accounts are created by your administrator.
