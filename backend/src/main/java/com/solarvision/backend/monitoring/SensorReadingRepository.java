@@ -86,4 +86,32 @@ public interface SensorReadingRepository extends JpaRepository<SensorReading, Lo
             """)
     BigDecimal sumLatestInverterPowerSinceInProjects(@Param("since") OffsetDateTime since,
                                                      @Param("projectIds") Set<Long> projectIds);
+
+
+    /** Energy between two moments, one total per site (only the given sites). */
+    @Query("""
+            select new com.solarvision.backend.monitoring.SiteValue(r.equipment.site.id, sum(r.energyKwh))
+            from SensorReading r
+            where r.recordedAt >= :rangeStart and r.recordedAt < :rangeEnd
+              and r.equipment.site.id in :siteIds
+            group by r.equipment.site.id
+            """)
+    List<SiteValue> sumEnergyBetweenBySite(@Param("rangeStart") OffsetDateTime rangeStart,
+                                           @Param("rangeEnd") OffsetDateTime rangeEnd,
+                                           @Param("siteIds") Collection<Long> siteIds);
+
+    /** Live power per site: newest reading of every inverter, counted only if newer than 'since'. */
+    @Query("""
+            select new com.solarvision.backend.monitoring.SiteValue(r.equipment.site.id, sum(r.powerKw))
+            from SensorReading r
+            where r.equipment.equipmentType = 'INVERTER'
+              and r.equipment.site.id in :siteIds
+              and r.recordedAt >= :since
+              and r.recordedAt = (select max(r2.recordedAt) from SensorReading r2
+                                  where r2.equipment = r.equipment)
+            group by r.equipment.site.id
+            """)
+    List<SiteValue> sumLatestInverterPowerSinceBySite(@Param("since") OffsetDateTime since,
+                                                      @Param("siteIds") Collection<Long> siteIds);
+
 }
