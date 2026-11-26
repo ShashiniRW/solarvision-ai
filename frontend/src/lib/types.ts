@@ -197,3 +197,19 @@ export type SiteTwin = {
   siteName: string;
   equipment: TwinEquipment[];
 };
+
+
+// ---------- Dashboard: sites today ----------
+
+export type SiteToday = {
+  siteId: number;
+  siteName: string;
+  projectId: number;
+  projectName: string;
+  capacityKw: number | null; // installed capacity (null = unknown)
+  energyTodayKwh: number; // since midnight, Colombo time
+  currentPowerKw: number; // newest inverter readings from the last 15 minutes
+  criticalAlerts: number;
+  warningAlerts: number;
+  health: SiteHealth;
+};

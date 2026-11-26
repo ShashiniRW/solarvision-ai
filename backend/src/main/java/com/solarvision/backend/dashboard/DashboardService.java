@@ -110,12 +110,12 @@ public class DashboardService {
     // ---------- helpers ----------
 
     /** "today" is the current day in the site's time zone */
-    private ZonedDateTime startOfToday() {
+    static ZonedDateTime startOfToday() {
         return LocalDate.now(SITE_ZONE).atStartOfDay(SITE_ZONE);
     }
 
     /** only readings newer than this count as live power */
-    private static OffsetDateTime liveSince() {
+    static OffsetDateTime liveSince() {
         return OffsetDateTime.now().minus(LIVE_WINDOW);
     }
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { currentColomboHour, sunPosition } from "@/lib/sun";
 import { EmptyState } from "@/components/empty-state";
 import { EnergyFlow } from "@/components/energy-flow";
+import { SitesToday } from "@/components/sites-today";
 import { StatusBadge } from "@/components/status-badge";
 import { SummaryCard } from "@/components/summary-card";
 import {
@@ -16,7 +17,7 @@ import { apiGet } from "@/lib/api";
 import { currentTimeLabel, formatDateTime } from "@/lib/format";
 import { getCurrentUser } from "@/lib/session";
 import { linkClass } from "@/lib/styles";
-import type { Alert, DashboardSummary } from "@/lib/types";
+import type { Alert, DashboardSummary, SiteToday } from "@/lib/types";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -24,11 +25,12 @@ export default async function DashboardPage() {
   // ADMIN sees every project; everyone else only the projects they belong to
   const seesAllProjects = user.roles.includes("ADMIN");
 
-  // all three requests run at the same time
-  const [summary, openAlerts, acknowledgedAlerts] = await Promise.all([
+  // all four requests run at the same time
+  const [summary, openAlerts, acknowledgedAlerts, sitesToday] = await Promise.all([
     apiGet<DashboardSummary>("/api/dashboard/summary"),
     apiGet<Alert[]>("/api/alerts?status=OPEN&size=5"),
     apiGet<Alert[]>("/api/alerts?status=ACKNOWLEDGED&size=5"),
+    apiGet<SiteToday[]>("/api/dashboard/sites-today"),
   ]);
 
   // "unresolved" = open + acknowledged. An acknowledged alert is not fixed yet.
@@ -90,6 +92,12 @@ export default async function DashboardPage() {
           isDay={sunPosition(currentColomboHour(), 1).isDay}
         />
       </div>
+
+      {sitesToday.length > 0 && (
+        <div className="mt-8">
+          <SitesToday sites={sitesToday} />
+        </div>
+      )}
 
       <section className="mt-8">
         <div className="flex items-center justify-between">
