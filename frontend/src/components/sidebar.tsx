@@ -40,10 +40,10 @@ export function NavLinks({ roles, onNavigate }: { roles: string[]; onNavigate?: 
   );
 }
 
-/** Desktop sidebar (hidden on phones, where the mobile menu is used instead). */
+/** Desktop sidebar (hidden on phones, where the mobile menu is used instead, and when printing). */
 export function Sidebar({ roles }: { roles: string[] }) {
   return (
-    <aside className="hidden w-60 shrink-0 border-r bg-card md:block">
+    <aside className="hidden w-60 shrink-0 border-r bg-card md:block print:hidden">
       <Link href="/dashboard" className="flex px-6 py-5 text-lg" aria-label="SolarVision AI home">
         <Logo />
       </Link>

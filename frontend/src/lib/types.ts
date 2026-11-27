@@ -232,3 +232,23 @@ export type ManagedUser = {
 
 // What a server action returns to the page: the data, or a message to show
 export type ActionResult<T = null> = { ok: true; data: T } | { ok: false; error: string };
+
+
+// ---------- Reports ----------
+
+export type ReportDay = {
+  date: string; // "2026-11-01"
+  energyKwh: number | null; // null = no readings that day (unknown, not 0)
+};
+
+export type MonthlyReport = {
+  projectId: number;
+  projectName: string;
+  month: string; // "2026-11"
+  totalEnergyKwh: number;
+  averageDailyKwh: number | null;
+  bestDay: ReportDay | null;
+  days: ReportDay[];
+  alerts: { total: number; critical: number; warning: number; resolved: number };
+  inspections: { scheduled: number; completed: number };
+};
