@@ -1,24 +1,19 @@
 package com.solarvision.backend.user;
 
-import com.solarvision.backend.common.exception.ConflictException;
 import com.solarvision.backend.common.exception.InvalidCredentialsException;
 import com.solarvision.backend.common.exception.ResourceNotFoundException;
-import com.solarvision.backend.organization.Organization;
-import com.solarvision.backend.organization.OrganizationRepository;
 import com.solarvision.backend.security.JwtUtil;
-import com.solarvision.backend.user.dto.RegisterRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.Set;
-
+/**
+ * Sign-in and "who am I". Accounts are no longer created here: public sign-up is closed,
+ * an administrator creates accounts on the Users page (see UserAdminService).
+ */
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
-    private final OrganizationRepository organizationRepository;
-    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
@@ -27,46 +22,12 @@ public class UserService {
     private final String dummyPasswordHash;
 
     public UserService(UserRepository userRepository,
-                       OrganizationRepository organizationRepository,
-                       RoleRepository roleRepository,
                        PasswordEncoder passwordEncoder,
                        JwtUtil jwtUtil) {
         this.userRepository = userRepository;
-        this.organizationRepository = organizationRepository;
-        this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.dummyPasswordHash = passwordEncoder.encode("not-a-real-password");
-    }
-
-    public User registerUser(RegisterRequest request) {
-
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new ConflictException("Email is already registered");
-        }
-
-        Organization organization = organizationRepository.findById(request.getOrganizationId())
-                .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
-
-        Role customerRole = roleRepository.findAll().stream()
-                .filter(role -> role.getName().equals("CUSTOMER"))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Default CUSTOMER role not found"));
-
-        User user = new User();
-        user.setOrganization(organization);
-        user.setFirstName(request.getFirstName());
-        user.setLastName(request.getLastName());
-        user.setEmail(request.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setPhone(request.getPhone());
-        user.setStatus("ACTIVE");
-
-        Set<Role> roles = new HashSet<>();
-        roles.add(customerRole);
-        user.setRoles(roles);
-
-        return userRepository.save(user);
     }
 
     public String login(String email, String rawPassword) {
@@ -90,6 +51,6 @@ public class UserService {
 
     public User getCurrentUser(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }

@@ -1,13 +1,15 @@
 package com.solarvision.backend.user;
 
-import com.solarvision.backend.user.dto.RegisterRequest;
 import com.solarvision.backend.user.dto.LoginRequest;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
+/**
+ * Sign-in. Public sign-up was removed on purpose: in a company system, accounts are created
+ * by an administrator (POST /api/admin/users), never by strangers.
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -16,21 +18,6 @@ public class AuthController {
 
     public AuthController(UserService userService) {
         this.userService = userService;
-    }
-
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
-        User savedUser = userService.registerUser(request);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                new RegisterResponse(
-                        savedUser.getId(),
-                        savedUser.getFirstName(),
-                        savedUser.getLastName(),
-                        savedUser.getEmail(),
-                        savedUser.getStatus()
-                )
-        );
     }
 
     @PostMapping("/login")
@@ -46,12 +33,4 @@ public class AuthController {
     }
 
     private record LoginResponse(String token) {}
-
-    private record RegisterResponse(
-            Long id,
-            String firstName,
-            String lastName,
-            String email,
-            String status
-    ) {}
 }

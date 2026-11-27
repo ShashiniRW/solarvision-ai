@@ -1,3 +1,4 @@
+import { KeyRound } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { LogoutButton } from "@/components/logout-button";
@@ -24,6 +25,14 @@ export function Header({ user }: { user: CurrentUser }) {
           </p>
           <p className="text-xs text-muted-foreground">{user.roles.join(" · ")}</p>
         </div>
+        <Link
+          href="/change-password"
+          aria-label="Change password"
+          title="Change password"
+          className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <KeyRound className="size-4" />
+        </Link>
         <ModeToggle />
         <LogoutButton />
       </div>

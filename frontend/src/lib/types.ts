@@ -213,3 +213,22 @@ export type SiteToday = {
   warningAlerts: number;
   health: SiteHealth;
 };
+
+
+// ---------- User management ----------
+
+export type ManagedUser = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  status: string; // ACTIVE | INACTIVE
+  roles: string[];
+  organizationName: string;
+  mustChangePassword: boolean;
+  createdAt: string | null;
+};
+
+// What a server action returns to the page: the data, or a message to show
+export type ActionResult<T = null> = { ok: true; data: T } | { ok: false; error: string };
