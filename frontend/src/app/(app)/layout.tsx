@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { Header } from "@/components/header";
 import { LiveUpdates } from "@/components/live-updates";
 import { Sidebar } from "@/components/sidebar";
@@ -5,6 +6,11 @@ import { getCurrentUser } from "@/lib/session";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
+
+  // someone with a temporary password must choose their own password before anything else
+  if (user.mustChangePassword) {
+    redirect("/change-password");
+  }
 
   return (
     // theme colours: light grey / dark page background, readable text in both modes

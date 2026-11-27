@@ -9,6 +9,8 @@ export type CurrentUser = {
   lastName: string;
   email: string;
   roles: string[];
+  // true after an administrator created the account or reset the password
+  mustChangePassword: boolean;
 };
 
 // Loads the logged-in user from the Spring Boot API.
@@ -19,12 +21,12 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
     redirect("/login");
   }
 
-  const response = await fetch(`${BACKEND_URL}/api/users/me`, {
+  const response = await fetch(`${BACKEND_URL}/api/account`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   });
 
-  // The backend does not accept this token (expired, tampered, or user removed)
+  // The backend does not accept this token (expired, tampered, or user deactivated)
   if (response.status === 401 || response.status === 404) {
     redirect("/api/auth/expired");
   }
