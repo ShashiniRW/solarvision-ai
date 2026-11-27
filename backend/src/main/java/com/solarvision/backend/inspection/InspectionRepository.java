@@ -34,17 +34,17 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
     // scoped list - only inspections whose equipment belongs to one of the given projects
     @EntityGraph(attributePaths = "equipment")
     @Query("SELECT i FROM Inspection i " +
-            "WHERE i.equipment.site.project.id IN :projectIds " +
-            "ORDER BY i.scheduledAt DESC")
+        "WHERE i.equipment.site.project.id IN :projectIds " +
+        "ORDER BY i.scheduledAt DESC")
     List<Inspection> findInProjects(@Param("projectIds") Collection<Long> projectIds,
                                     Pageable pageable);
 
     // same, filtered by status
     @EntityGraph(attributePaths = "equipment")
     @Query("SELECT i FROM Inspection i " +
-            "WHERE i.status = :status " +
-            "AND i.equipment.site.project.id IN :projectIds " +
-            "ORDER BY i.scheduledAt DESC")
+        "WHERE i.status = :status " +
+        "AND i.equipment.site.project.id IN :projectIds " +
+        "ORDER BY i.scheduledAt DESC")
     List<Inspection> findByStatusInProjects(@Param("status") InspectionStatus status,
                                             @Param("projectIds") Collection<Long> projectIds,
                                             Pageable pageable);
@@ -57,17 +57,41 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
 
     // NEW (dashboard): count by status, limited to the given projects
     @Query("SELECT COUNT(i) FROM Inspection i " +
-            "WHERE i.status = :status " +
-            "AND i.equipment.site.project.id IN :projectIds")
+        "WHERE i.status = :status " +
+        "AND i.equipment.site.project.id IN :projectIds")
     long countByStatusInProjects(@Param("status") InspectionStatus status,
                                  @Param("projectIds") Collection<Long> projectIds);
 
     // NEW (dashboard): overdue inspections, limited to the given projects
     @Query("SELECT COUNT(i) FROM Inspection i " +
-            "WHERE i.status = :status " +
-            "AND i.scheduledAt < :time " +
-            "AND i.equipment.site.project.id IN :projectIds")
+        "WHERE i.status = :status " +
+        "AND i.scheduledAt < :time " +
+        "AND i.equipment.site.project.id IN :projectIds")
     long countByStatusAndScheduledAtBeforeInProjects(@Param("status") InspectionStatus status,
                                                      @Param("time") OffsetDateTime time,
                                                      @Param("projectIds") Collection<Long> projectIds);
+
+    // ---- reports ----
+
+    /** Inspections planned in a period for one project (whatever their status now). */
+    @Query("""
+            select count(i) from Inspection i
+            where i.equipment.site.project.id = :projectId
+              and i.scheduledAt >= :rangeStart and i.scheduledAt < :rangeEnd
+            """)
+    long countScheduledInProjectBetween(@Param("projectId") Long projectId,
+                                        @Param("rangeStart") OffsetDateTime rangeStart,
+                                        @Param("rangeEnd") OffsetDateTime rangeEnd);
+
+    /** Inspections finished in a period for one project. */
+    @Query("""
+            select count(i) from Inspection i
+            where i.equipment.site.project.id = :projectId
+              and i.status = :status
+              and i.completedAt >= :rangeStart and i.completedAt < :rangeEnd
+            """)
+    long countCompletedInProjectBetween(@Param("projectId") Long projectId,
+                                        @Param("status") InspectionStatus status,
+                                        @Param("rangeStart") OffsetDateTime rangeStart,
+                                        @Param("rangeEnd") OffsetDateTime rangeEnd);
 }

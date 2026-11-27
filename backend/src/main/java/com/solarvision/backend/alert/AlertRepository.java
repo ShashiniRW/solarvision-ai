@@ -78,17 +78,17 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     // scoped list - only alerts whose equipment belongs to one of the given projects
     @EntityGraph(attributePaths = "equipment")
     @Query("SELECT a FROM Alert a " +
-            "WHERE a.equipment.site.project.id IN :projectIds " +
-            "ORDER BY a.triggeredAt DESC")
+        "WHERE a.equipment.site.project.id IN :projectIds " +
+        "ORDER BY a.triggeredAt DESC")
     List<Alert> findInProjects(@Param("projectIds") Collection<Long> projectIds,
                                Pageable pageable);
 
     // same, filtered by status
     @EntityGraph(attributePaths = "equipment")
     @Query("SELECT a FROM Alert a " +
-            "WHERE a.status = :status " +
-            "AND a.equipment.site.project.id IN :projectIds " +
-            "ORDER BY a.triggeredAt DESC")
+        "WHERE a.status = :status " +
+        "AND a.equipment.site.project.id IN :projectIds " +
+        "ORDER BY a.triggeredAt DESC")
     List<Alert> findByStatusInProjects(@Param("status") AlertStatus status,
                                        @Param("projectIds") Collection<Long> projectIds,
                                        Pageable pageable);
@@ -101,16 +101,16 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
 
     // NEW (dashboard): counts limited to the given projects
     @Query("SELECT COUNT(a) FROM Alert a " +
-            "WHERE a.status = :status " +
-            "AND a.equipment.site.project.id IN :projectIds")
+        "WHERE a.status = :status " +
+        "AND a.equipment.site.project.id IN :projectIds")
     long countByStatusInProjects(@Param("status") AlertStatus status,
                                  @Param("projectIds") Collection<Long> projectIds);
 
     // NEW (dashboard): unresolved alerts of one severity, limited to the given projects
     @Query("SELECT COUNT(a) FROM Alert a " +
-            "WHERE a.severity = :severity " +
-            "AND a.status <> :status " +
-            "AND a.equipment.site.project.id IN :projectIds")
+        "WHERE a.severity = :severity " +
+        "AND a.status <> :status " +
+        "AND a.equipment.site.project.id IN :projectIds")
     long countBySeverityAndStatusNotInProjects(@Param("severity") AlertSeverity severity,
                                                @Param("status") AlertStatus status,
                                                @Param("projectIds") Collection<Long> projectIds);
@@ -133,4 +133,30 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
             """)
     List<EquipmentAlertCount> countUnresolvedByEquipmentForSite(@Param("siteId") Long siteId,
                                                                 @Param("resolved") AlertStatus resolved);
+
+    // ---- reports ----
+
+    /** Alerts raised in a period for one project, counted per severity. */
+    @Query("""
+            select new com.solarvision.backend.alert.AlertSeverityCount(a.severity, count(a))
+            from Alert a
+            where a.equipment.site.project.id = :projectId
+              and a.triggeredAt >= :rangeStart and a.triggeredAt < :rangeEnd
+            group by a.severity
+            """)
+    List<AlertSeverityCount> countBySeverityInProjectBetween(@Param("projectId") Long projectId,
+                                                             @Param("rangeStart") OffsetDateTime rangeStart,
+                                                             @Param("rangeEnd") OffsetDateTime rangeEnd);
+
+    /** Alerts raised in a period for one project that now have the given status (e.g. RESOLVED). */
+    @Query("""
+            select count(a) from Alert a
+            where a.equipment.site.project.id = :projectId
+              and a.status = :status
+              and a.triggeredAt >= :rangeStart and a.triggeredAt < :rangeEnd
+            """)
+    long countByStatusInProjectBetween(@Param("projectId") Long projectId,
+                                       @Param("status") AlertStatus status,
+                                       @Param("rangeStart") OffsetDateTime rangeStart,
+                                       @Param("rangeEnd") OffsetDateTime rangeEnd);
 }

@@ -18,7 +18,7 @@ public interface SensorReadingRepository extends JpaRepository<SensorReading, Lo
 
     // All readings for one piece of equipment between two times, oldest first
     List<SensorReading> findByEquipmentIdAndRecordedAtBetweenOrderByRecordedAtAsc(
-            Long equipmentId, OffsetDateTime from, OffsetDateTime to);
+        Long equipmentId, OffsetDateTime from, OffsetDateTime to);
 
     // Used to reject duplicate readings (same equipment, same moment)
     boolean existsByEquipmentIdAndRecordedAt(Long equipmentId, OffsetDateTime recordedAt);
@@ -44,14 +44,14 @@ public interface SensorReadingRepository extends JpaRepository<SensorReading, Lo
 
     // total energy produced between two moments (null when there are no readings)
     @Query("SELECT SUM(r.energyKwh) FROM SensorReading r "
-            + "WHERE r.recordedAt >= :rangeStart AND r.recordedAt < :rangeEnd")
+        + "WHERE r.recordedAt >= :rangeStart AND r.recordedAt < :rangeEnd")
     BigDecimal sumEnergyBetween(@Param("rangeStart") OffsetDateTime rangeStart,
                                 @Param("rangeEnd") OffsetDateTime rangeEnd);
 
     // NEW (dashboard): same total, but only for equipment in the given projects
     @Query("SELECT SUM(r.energyKwh) FROM SensorReading r "
-            + "WHERE r.recordedAt >= :rangeStart AND r.recordedAt < :rangeEnd "
-            + "AND r.equipment.site.project.id IN :projectIds")
+        + "WHERE r.recordedAt >= :rangeStart AND r.recordedAt < :rangeEnd "
+        + "AND r.equipment.site.project.id IN :projectIds")
     BigDecimal sumEnergyBetweenInProjects(@Param("rangeStart") OffsetDateTime rangeStart,
                                           @Param("rangeEnd") OffsetDateTime rangeEnd,
                                           @Param("projectIds") Collection<Long> projectIds);
@@ -87,7 +87,6 @@ public interface SensorReadingRepository extends JpaRepository<SensorReading, Lo
     BigDecimal sumLatestInverterPowerSinceInProjects(@Param("since") OffsetDateTime since,
                                                      @Param("projectIds") Set<Long> projectIds);
 
-
     /** Energy between two moments, one total per site (only the given sites). */
     @Query("""
             select new com.solarvision.backend.monitoring.SiteValue(r.equipment.site.id, sum(r.energyKwh))
@@ -114,4 +113,24 @@ public interface SensorReadingRepository extends JpaRepository<SensorReading, Lo
     List<SiteValue> sumLatestInverterPowerSinceBySite(@Param("since") OffsetDateTime since,
                                                       @Param("siteIds") Collection<Long> siteIds);
 
+    /**
+     * Reports: energy per day for one project, with days counted in the site's time zone.
+     * The database adds everything up, so only one row per day comes back (about 30 rows).
+     */
+    @Query(value = """
+            SELECT to_char(CAST(r.recorded_at AT TIME ZONE :zone AS date), 'YYYY-MM-DD') AS "day",
+                   SUM(r.energy_kwh)                                                     AS "energyKwh"
+            FROM sensor_readings r
+            JOIN equipment e ON e.id = r.equipment_id
+            JOIN sites s ON s.id = e.site_id
+            WHERE s.project_id = :projectId
+              AND r.recorded_at >= :fromTs
+              AND r.recorded_at <  :toTs
+            GROUP BY 1
+            ORDER BY 1
+            """, nativeQuery = true)
+    List<ProjectDailyEnergy> sumEnergyPerDayForProject(@Param("projectId") Long projectId,
+                                                       @Param("fromTs") OffsetDateTime fromTs,
+                                                       @Param("toTs") OffsetDateTime toTs,
+                                                       @Param("zone") String zone);
 }
