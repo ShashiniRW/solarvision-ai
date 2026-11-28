@@ -1,0 +1,9 @@
+node_modules/
+.next/
+npm-debug.log*
+Dockerfile
+.dockerignore
+
+# NEVER copy local secrets into an image
+.env*
+!.env.example

@@ -5,6 +5,9 @@ import { Logo } from "@/components/logo";
 import { ModeToggle } from "@/components/mode-toggle";
 import { BACKEND_URL } from "@/lib/backend";
 
+// the demo buttons depend on the backend at request time, so never pre-build this page
+export const dynamic = "force-dynamic";
+
 const FEATURES = ["Live monitoring", "AI anomaly detection", "3D digital twin", "Maintenance workflow"];
 
 /** True when the backend runs in demo mode (the endpoint only exists then). */
