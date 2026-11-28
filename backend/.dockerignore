@@ -1,0 +1,8 @@
+target/
+.idea/
+*.iml
+HELP.md
+
+# NEVER copy local secrets into an image
+src/main/resources/application.properties
+.env

@@ -1,0 +1,70 @@
+# SolarVision AI: the whole system with one command
+#   docker compose up --build -d
+# Secrets come from the .env file next to this one (never committed).
+name: solarvision
+
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: solarvision_db
+      POSTGRES_USER: solarvision
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U solarvision -d solarvision_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  qdrant:
+    image: qdrant/qdrant:v1.20.0
+    restart: unless-stopped
+    volumes:
+      - qdrant-data:/qdrant/storage
+
+  ai-service:
+    build: ./ai-service
+    restart: unless-stopped
+    environment:
+      INTERNAL_API_KEY: ${AI_INTERNAL_API_KEY:?Set AI_INTERNAL_API_KEY in .env}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env}
+      QDRANT_URL: http://qdrant:6333
+    depends_on:
+      - qdrant
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://db:5432/solarvision_db
+      DB_USERNAME: solarvision
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      AI_BASE_URL: http://ai-service:8000
+      AI_INTERNAL_API_KEY: ${AI_INTERNAL_API_KEY:?Set AI_INTERNAL_API_KEY in .env}
+      DEMO_ENABLED: ${DEMO_ENABLED:-false}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-}
+      SIMULATOR_ENABLED: ${SIMULATOR_ENABLED:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  db-data:
+  qdrant-data:
