@@ -17,6 +17,10 @@ COPY src/ src/
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 
+# The guides for the AI assistant (RAG). Loaded into Qdrant with:
+#   docker compose exec ai-service python -m solarvision_ai_service.knowledge
+COPY knowledge/ knowledge/
+
 RUN useradd --system --no-create-home app
 USER app
 ENV PATH="/app/.venv/bin:$PATH"
